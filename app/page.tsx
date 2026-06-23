@@ -12,8 +12,11 @@ type SceneState = {
   stepCount: number;
 };
 
-const SLOT_COUNT = 5;
+const DESKTOP_SLOT_COUNT = 5;
+const MOBILE_SLOT_COUNT = 1;
+const MOBILE_BREAKPOINT_PX = 900;
 const WHEEL_MIN_DELTA = 1;
+const TOUCH_MIN_DELTA = 18;
 
 function toPanFromRatios(xRatio: number, yRatio: number) {
   const clampedX = Math.max(0, Math.min(1, xRatio));
@@ -25,18 +28,18 @@ function toPanFromRatios(xRatio: number, yRatio: number) {
   };
 }
 
-function getInitialState(): SceneState {
-  const initialSlots: StageSlot[] = Array.from({ length: SLOT_COUNT }, (_, index) => ({
+function getInitialState(slotCount: number): SceneState {
+  const initialSlots: StageSlot[] = Array.from({ length: slotCount }, (_, index) => ({
     id: index,
     imageIndex: index % photos.length,
-    // Keep one dedicated lane per slot to prevent any overlap.
+    // Keep one dedicated lane per slot to prevent layout overlap.
     layoutIndex: index % slotLayouts.length,
     version: 0
   }));
 
   return {
     slots: initialSlots,
-    nextImageIndex: SLOT_COUNT % photos.length,
+    nextImageIndex: slotCount % photos.length,
     stepCount: 0
   };
 }
@@ -50,13 +53,18 @@ function cloneScene(scene: SceneState): SceneState {
 }
 
 export default function HomePage() {
-  const [scene, setScene] = useState<SceneState>(() => getInitialState());
+  const [isMobile, setIsMobile] = useState(false);
+  const slotCount = isMobile ? MOBILE_SLOT_COUNT : DESKTOP_SLOT_COUNT;
+
+  const [scene, setScene] = useState<SceneState>(() => getInitialState(DESKTOP_SLOT_COUNT));
   const [hoveredSlotId, setHoveredSlotId] = useState<number | null>(null);
+  const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
   const [pan, setPan] = useState({ x: 50, y: 50 });
 
   const historyRef = useRef<SceneState[]>([]);
   const pendingDirectionRef = useRef<1 | -1 | null>(null);
   const frameRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   const advanceScene = useCallback((direction: 1 | -1) => {
     setScene((previous) => {
@@ -68,7 +76,7 @@ export default function HomePage() {
       // Save one step before replacing the next slot.
       historyRef.current.push(cloneScene(previous));
 
-      const targetSlotId = previous.stepCount % SLOT_COUNT;
+      const targetSlotId = previous.stepCount % slotCount;
       const updatedSlots = previous.slots.map((slot) => {
         if (slot.id !== targetSlotId) {
           return slot;
@@ -87,7 +95,7 @@ export default function HomePage() {
         stepCount: previous.stepCount + 1
       };
     });
-  }, []);
+  }, [slotCount]);
 
   const flushPendingScroll = useCallback(() => {
     frameRef.current = null;
@@ -99,6 +107,19 @@ export default function HomePage() {
 
     advanceScene(direction);
   }, [advanceScene]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const syncViewportMode = () => {
+      setIsMobile(mediaQuery.matches);
+    };
+    syncViewportMode();
+    mediaQuery.addEventListener("change", syncViewportMode);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncViewportMode);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -120,6 +141,10 @@ export default function HomePage() {
 
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLElement>) => {
+      if (expandedImageSrc) {
+        return;
+      }
+
       event.preventDefault();
       if (Math.abs(event.deltaY) < WHEEL_MIN_DELTA) {
         return;
@@ -135,7 +160,7 @@ export default function HomePage() {
         frameRef.current = window.requestAnimationFrame(flushPendingScroll);
       }
     },
-    [flushPendingScroll, hoveredSlotId]
+    [expandedImageSrc, flushPendingScroll, hoveredSlotId]
   );
 
   const hoveredImageSrc = useMemo(() => {
@@ -156,9 +181,51 @@ export default function HomePage() {
     setPan(toPanFromRatios(xRatio, yRatio));
   }, [hoveredSlotId]);
 
+  const handleTouchStart = useCallback((touchY: number) => {
+    touchStartYRef.current = touchY;
+  }, []);
+
+  const handleTouchMove = useCallback((touchY: number) => {
+    if (!isMobile || expandedImageSrc) {
+      return;
+    }
+    const startY = touchStartYRef.current;
+    if (startY === null) {
+      return;
+    }
+
+    const deltaY = startY - touchY;
+    if (Math.abs(deltaY) < TOUCH_MIN_DELTA) {
+      return;
+    }
+
+    // Reset baseline after each accepted swipe step for smooth carousel scrolling.
+    touchStartYRef.current = touchY;
+    pendingDirectionRef.current = deltaY > 0 ? 1 : -1;
+    if (frameRef.current === null) {
+      frameRef.current = window.requestAnimationFrame(flushPendingScroll);
+    }
+  }, [expandedImageSrc, flushPendingScroll, isMobile]);
+
+  const immersiveImageSrc = isMobile ? expandedImageSrc : hoveredImageSrc;
+  const visibleSlots = useMemo(() => scene.slots.slice(0, slotCount), [scene.slots, slotCount]);
+
   return (
-    <main className={`home-page ${hoveredSlotId !== null ? "is-hovering-image" : ""}`} onWheel={handleWheel}>
-      <ImmersiveHover imageSrc={hoveredImageSrc} panX={pan.x} panY={pan.y} />
+    <main
+      className={`home-page ${hoveredSlotId !== null || expandedImageSrc ? "is-hovering-image" : ""} ${isMobile ? "is-mobile" : ""}`}
+      onWheel={handleWheel}
+      onTouchStart={(event) => handleTouchStart(event.touches[0].clientY)}
+      onTouchMove={(event) => {
+        handleTouchMove(event.touches[0].clientY);
+        if (isMobile && !expandedImageSrc) {
+          event.preventDefault();
+        }
+      }}
+      onTouchEnd={() => {
+        touchStartYRef.current = null;
+      }}
+    >
+      <ImmersiveHover imageSrc={immersiveImageSrc} panX={pan.x} panY={pan.y} />
 
       <nav className="home-menu" aria-label="Main menu">
         <p className="home-menu__name">Cédric Benet</p>
@@ -171,16 +238,47 @@ export default function HomePage() {
         <span className="scroll-hint__line" />
       </div>
 
-      <GalleryStage
-        slots={scene.slots}
-        hoveredSlotId={hoveredSlotId}
-        onHoverStart={(slotId, xRatio, yRatio) => {
-          setHoveredSlotId(slotId);
-          setPan(toPanFromRatios(xRatio, yRatio));
-        }}
-        onHoverEnd={() => setHoveredSlotId(null)}
-        onHoverMove={handleHoverMove}
-      />
+      {/* Hide the mobile thumbnail while the fullscreen view is open. */}
+      {!(isMobile && expandedImageSrc) ? (
+        <GalleryStage
+          slots={visibleSlots}
+          isMobile={isMobile}
+          hoveredSlotId={hoveredSlotId}
+          onImageClick={(slotId) => {
+            if (!isMobile) {
+              return;
+            }
+            const clickedSlot = visibleSlots.find((slot) => slot.id === slotId);
+            if (!clickedSlot) {
+              return;
+            }
+            setExpandedImageSrc(photos[clickedSlot.imageIndex].src.src);
+          }}
+          onHoverStart={(slotId, xRatio, yRatio) => {
+            if (isMobile) {
+              return;
+            }
+            setHoveredSlotId(slotId);
+            setPan(toPanFromRatios(xRatio, yRatio));
+          }}
+          onHoverEnd={() => {
+            if (isMobile) {
+              return;
+            }
+            setHoveredSlotId(null);
+          }}
+          onHoverMove={handleHoverMove}
+        />
+      ) : null}
+
+      {isMobile && expandedImageSrc ? (
+        <button
+          type="button"
+          className="mobile-overlay-close"
+          onClick={() => setExpandedImageSrc(null)}
+          aria-label="Close image"
+        />
+      ) : null}
     </main>
   );
 }

@@ -13,7 +13,9 @@ export type StageSlot = {
 
 type GalleryStageProps = {
   slots: StageSlot[];
+  isMobile: boolean;
   hoveredSlotId: number | null;
+  onImageClick: (slotId: number) => void;
   onHoverStart: (slotId: number, xRatio: number, yRatio: number) => void;
   onHoverEnd: () => void;
   onHoverMove: (slotId: number, xRatio: number, yRatio: number) => void;
@@ -21,7 +23,9 @@ type GalleryStageProps = {
 
 export function GalleryStage({
   slots,
+  isMobile,
   hoveredSlotId,
+  onImageClick,
   onHoverStart,
   onHoverEnd,
   onHoverMove
@@ -29,7 +33,7 @@ export function GalleryStage({
   const isHovering = hoveredSlotId !== null;
 
   return (
-    <div className={`gallery-stage ${isHovering ? "is-hovering" : ""}`}>
+    <div className={`gallery-stage ${isHovering ? "is-hovering" : ""} ${isMobile ? "is-mobile" : ""}`}>
       {slots.map((slot, index) => {
         const photo = photos[slot.imageIndex];
         const layout = slotLayouts[slot.layoutIndex];
@@ -45,14 +49,26 @@ export function GalleryStage({
               <button
                 className="photo-slot"
                 type="button"
+                onClick={() => onImageClick(slot.id)}
                 onMouseEnter={(event) => {
+                  if (isMobile) {
+                    return;
+                  }
                   const bounds = event.currentTarget.getBoundingClientRect();
                   const xRatio = (event.clientX - bounds.left) / bounds.width;
                   const yRatio = (event.clientY - bounds.top) / bounds.height;
                   onHoverStart(slot.id, xRatio, yRatio);
                 }}
-                onMouseLeave={onHoverEnd}
+                onMouseLeave={() => {
+                  if (isMobile) {
+                    return;
+                  }
+                  onHoverEnd();
+                }}
                 onMouseMove={(event) => {
+                  if (isMobile) {
+                    return;
+                  }
                   const bounds = event.currentTarget.getBoundingClientRect();
                   const xRatio = (event.clientX - bounds.left) / bounds.width;
                   const yRatio = (event.clientY - bounds.top) / bounds.height;
@@ -67,7 +83,7 @@ export function GalleryStage({
                   quality={45}
                   priority={index < 3}
                   loading={index < 3 ? "eager" : "lazy"}
-                  sizes="(max-width: 768px) 52vw, 18vw"
+                  sizes="(max-width: 900px) 88vw, 18vw"
                 />
               </button>
             </div>

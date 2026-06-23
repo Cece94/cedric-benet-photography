@@ -28,6 +28,10 @@ body {
   user-select: none;
 }
 
+.home-page.is-mobile {
+  touch-action: none;
+}
+
 .home-menu {
   position: fixed;
   top: 1rem;
@@ -160,6 +164,16 @@ body {
   background-size: 108%;
 }
 
+.mobile-overlay-close {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  appearance: none;
+}
+
 @keyframes scroll-hint-flow {
   0% {
     background-position: 0 0%;
@@ -196,5 +210,32 @@ body {
   .scroll-hint__line {
     height: 3.6rem;
   }
+
+  .gallery-stage.is-mobile {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    padding: 5.2rem 1rem 4rem;
+  }
+
+  .gallery-stage.is-mobile .slot-shell {
+    position: static;
+    width: min(88vw, 560px) !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  .gallery-stage.is-mobile .photo-slot {
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .gallery-stage.is-mobile .photo-slot__image {
+    width: 100%;
+    height: auto;
+  }
+
 }
 
