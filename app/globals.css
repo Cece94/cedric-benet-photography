@@ -69,6 +69,11 @@ body {
   align-items: center;
   gap: 0.45rem;
   pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.home-page.is-hovering-image .scroll-hint {
+  opacity: 0;
 }
 
 .scroll-hint__label {

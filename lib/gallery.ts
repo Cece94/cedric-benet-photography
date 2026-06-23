@@ -83,9 +83,10 @@ export const photos: PhotoItem[] = [
 ];
 
 export const slotLayouts: SlotLayout[] = [
-  { left: "12%", top: "34%", width: "15vw" },
-  { left: "28%", top: "34%", width: "15vw" },
-  { left: "44%", top: "34%", width: "15vw" },
-  { left: "60%", top: "34%", width: "15vw" },
-  { left: "76%", top: "34%", width: "15vw" }
+  // Larger slots improve readability while staying responsive across screens.
+  { left: "5%", top: "30%", width: "clamp(200px, 18vw, 360px)" },
+  { left: "24%", top: "30%", width: "clamp(200px, 18vw, 360px)" },
+  { left: "43%", top: "30%", width: "clamp(200px, 18vw, 360px)" },
+  { left: "62%", top: "30%", width: "clamp(200px, 18vw, 360px)" },
+  { left: "81%", top: "30%", width: "clamp(200px, 18vw, 360px)" }
 ];

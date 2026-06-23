@@ -157,7 +157,7 @@ export default function HomePage() {
   }, [hoveredSlotId]);
 
   return (
-    <main className="home-page" onWheel={handleWheel}>
+    <main className={`home-page ${hoveredSlotId !== null ? "is-hovering-image" : ""}`} onWheel={handleWheel}>
       <ImmersiveHover imageSrc={hoveredImageSrc} panX={pan.x} panY={pan.y} />
 
       <nav className="home-menu" aria-label="Main menu">

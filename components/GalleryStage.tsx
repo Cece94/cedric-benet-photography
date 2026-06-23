@@ -67,7 +67,7 @@ export function GalleryStage({
                   quality={45}
                   priority={index < 3}
                   loading={index < 3 ? "eager" : "lazy"}
-                  sizes="(max-width: 768px) 40vw, 20vw"
+                  sizes="(max-width: 768px) 52vw, 18vw"
                 />
               </button>
             </div>
