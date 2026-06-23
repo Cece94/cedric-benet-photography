@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
 
 import { GalleryStage, type StageSlot } from "@/components/GalleryStage";
 import { ImmersiveHover } from "@/components/ImmersiveHover";
@@ -13,8 +13,7 @@ type SceneState = {
 };
 
 const SLOT_COUNT = 5;
-const THROTTLE_MS = 430;
-const WHEEL_THRESHOLD = 36;
+const WHEEL_MIN_DELTA = 1;
 
 function toPanFromRatios(xRatio: number, yRatio: number) {
   const clampedX = Math.max(0, Math.min(1, xRatio));
@@ -56,7 +55,8 @@ export default function HomePage() {
   const [pan, setPan] = useState({ x: 50, y: 50 });
 
   const historyRef = useRef<SceneState[]>([]);
-  const lastWheelAtRef = useRef(0);
+  const pendingDirectionRef = useRef<1 | -1 | null>(null);
+  const frameRef = useRef<number | null>(null);
 
   const advanceScene = useCallback((direction: 1 | -1) => {
     setScene((previous) => {
@@ -89,29 +89,53 @@ export default function HomePage() {
     });
   }, []);
 
+  const flushPendingScroll = useCallback(() => {
+    frameRef.current = null;
+    const direction = pendingDirectionRef.current;
+    pendingDirectionRef.current = null;
+    if (direction === null) {
+      return;
+    }
+
+    advanceScene(direction);
+  }, [advanceScene]);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Preload only upcoming images to keep swaps instant without network spikes.
+    const nextPhoto = photos[scene.nextImageIndex];
+    const afterNextPhoto = photos[(scene.nextImageIndex + 1) % photos.length];
+    [nextPhoto, afterNextPhoto].forEach((photo) => {
+      const img = new window.Image();
+      img.src = photo.src.src;
+    });
+  }, [scene.nextImageIndex]);
+
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLElement>) => {
       event.preventDefault();
-
-      const absoluteDelta = Math.abs(event.deltaY);
-      if (absoluteDelta < WHEEL_THRESHOLD) {
+      if (Math.abs(event.deltaY) < WHEEL_MIN_DELTA) {
         return;
       }
 
-      const now = Date.now();
-      // Keep scroll transitions readable and avoid accidental multi-triggers.
-      if (now - lastWheelAtRef.current < THROTTLE_MS) {
-        return;
-      }
-
-      lastWheelAtRef.current = now;
       if (hoveredSlotId !== null) {
         setHoveredSlotId(null);
       }
 
-      advanceScene(event.deltaY > 0 ? 1 : -1);
+      pendingDirectionRef.current = event.deltaY > 0 ? 1 : -1;
+      if (frameRef.current === null) {
+        // Process once per frame to stay instant while avoiding render floods.
+        frameRef.current = window.requestAnimationFrame(flushPendingScroll);
+      }
     },
-    [advanceScene, hoveredSlotId]
+    [flushPendingScroll, hoveredSlotId]
   );
 
   const hoveredImageSrc = useMemo(() => {
