@@ -83,9 +83,9 @@ export const photos: PhotoItem[] = [
 ];
 
 export const slotLayouts: SlotLayout[] = [
-  { left: "18%", top: "34%", width: "12vw" },
-  { left: "31%", top: "34%", width: "12vw" },
-  { left: "44%", top: "34%", width: "12vw" },
-  { left: "57%", top: "34%", width: "12vw" },
-  { left: "70%", top: "34%", width: "12vw" }
+  { left: "12%", top: "34%", width: "15vw" },
+  { left: "28%", top: "34%", width: "15vw" },
+  { left: "44%", top: "34%", width: "15vw" },
+  { left: "60%", top: "34%", width: "15vw" },
+  { left: "76%", top: "34%", width: "15vw" }
 ];
