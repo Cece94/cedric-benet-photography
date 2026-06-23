@@ -15,7 +15,7 @@ export type StageSlot = {
 type GalleryStageProps = {
   slots: StageSlot[];
   hoveredSlotId: number | null;
-  onHoverStart: (slotId: number) => void;
+  onHoverStart: (slotId: number, xRatio: number, yRatio: number) => void;
   onHoverEnd: () => void;
   onHoverMove: (slotId: number, xRatio: number, yRatio: number) => void;
 };
@@ -54,7 +54,12 @@ export function GalleryStage({
                 <button
                   className="photo-slot"
                   type="button"
-                  onMouseEnter={() => onHoverStart(slot.id)}
+                  onMouseEnter={(event) => {
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    const xRatio = (event.clientX - bounds.left) / bounds.width;
+                    const yRatio = (event.clientY - bounds.top) / bounds.height;
+                    onHoverStart(slot.id, xRatio, yRatio);
+                  }}
                   onMouseLeave={onHoverEnd}
                   onMouseMove={(event) => {
                     const bounds = event.currentTarget.getBoundingClientRect();

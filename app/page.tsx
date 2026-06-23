@@ -16,6 +16,16 @@ const SLOT_COUNT = 5;
 const THROTTLE_MS = 430;
 const WHEEL_THRESHOLD = 36;
 
+function toPanFromRatios(xRatio: number, yRatio: number) {
+  const clampedX = Math.max(0, Math.min(1, xRatio));
+  const clampedY = Math.max(0, Math.min(1, yRatio));
+
+  return {
+    x: 14 + clampedX * 72,
+    y: 16 + clampedY * 68
+  };
+}
+
 function getInitialState(): SceneState {
   const initialSlots: StageSlot[] = Array.from({ length: SLOT_COUNT }, (_, index) => ({
     id: index,
@@ -119,10 +129,7 @@ export default function HomePage() {
     }
 
     // Cursor position in thumbnail controls the visible area of the zoomed background.
-    setPan({
-      x: 14 + Math.max(0, Math.min(1, xRatio)) * 72,
-      y: 16 + Math.max(0, Math.min(1, yRatio)) * 68
-    });
+    setPan(toPanFromRatios(xRatio, yRatio));
   }, [hoveredSlotId]);
 
   return (
@@ -137,9 +144,9 @@ export default function HomePage() {
       <GalleryStage
         slots={scene.slots}
         hoveredSlotId={hoveredSlotId}
-        onHoverStart={(slotId) => {
+        onHoverStart={(slotId, xRatio, yRatio) => {
           setHoveredSlotId(slotId);
-          setPan({ x: 50, y: 50 });
+          setPan(toPanFromRatios(xRatio, yRatio));
         }}
         onHoverEnd={() => setHoveredSlotId(null)}
         onHoverMove={handleHoverMove}

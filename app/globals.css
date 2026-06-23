@@ -118,7 +118,8 @@ body {
   position: absolute;
   inset: 0;
   background-repeat: no-repeat;
-  background-size: 220%;
+  /* Keep aspect ratio while adding slight extra room for panning. */
+  background-size: 108%;
 }
 
 @media (max-width: 1024px) {
