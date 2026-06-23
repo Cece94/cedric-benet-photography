@@ -160,10 +160,16 @@ export default function HomePage() {
     <main className="home-page" onWheel={handleWheel}>
       <ImmersiveHover imageSrc={hoveredImageSrc} panX={pan.x} panY={pan.y} />
 
-      <header className="home-page__title">
-        <p>Cedric Benet</p>
-      </header>
-      <div className="home-page__vertical-tag">Photography</div>
+      <nav className="home-menu" aria-label="Main menu">
+        <p className="home-menu__name">Cédric Benet</p>
+        <p>Instagram</p>
+        <p>A propos</p>
+        <p>Contact</p>
+      </nav>
+      <div className="scroll-hint" aria-hidden="true">
+        <span className="scroll-hint__label">Scroll to explore gallery</span>
+        <span className="scroll-hint__line" />
+      </div>
 
       <GalleryStage
         slots={scene.slots}
