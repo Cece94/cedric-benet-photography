@@ -102,52 +102,6 @@ body {
   animation: scroll-hint-flow 1.5s ease-in-out infinite;
 }
 
-.gallery-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.slot-shell {
-  position: absolute;
-  z-index: 20;
-  transition: opacity 0.18s ease;
-}
-
-.slot-shell.is-hovered {
-  z-index: 30;
-}
-
-.gallery-stage.is-hovering .slot-shell:not(.is-hovered) {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.photo-card {
-  width: 100%;
-}
-
-.photo-slot {
-  display: block;
-  width: 100%;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  appearance: none;
-  cursor: crosshair;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
-}
-
-.slot-shell.is-hovered .photo-slot {
-  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.35);
-}
-
-.photo-slot__image {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
 .immersive-overlay {
   position: fixed;
   inset: 0;
@@ -210,32 +164,4 @@ body {
   .scroll-hint__line {
     height: 3.6rem;
   }
-
-  .gallery-stage.is-mobile {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 0;
-    padding: 5.2rem 1rem 4rem;
-  }
-
-  .gallery-stage.is-mobile .slot-shell {
-    position: static;
-    width: min(88vw, 560px) !important;
-    left: auto !important;
-    top: auto !important;
-  }
-
-  .gallery-stage.is-mobile .photo-slot {
-    width: 100%;
-    cursor: pointer;
-  }
-
-  .gallery-stage.is-mobile .photo-slot__image {
-    width: 100%;
-    height: auto;
-  }
-
 }
-
