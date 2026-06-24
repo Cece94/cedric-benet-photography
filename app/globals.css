@@ -136,10 +136,15 @@ body {
   appearance: none;
   cursor: crosshair;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
 }
 
 .slot-shell.is-hovered .photo-slot {
   box-shadow: 0 18px 54px rgba(0, 0, 0, 0.35);
+}
+
+.photo-slot__media {
+  display: block;
 }
 
 .photo-slot__image {
