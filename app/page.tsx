@@ -16,7 +16,8 @@ const DESKTOP_SLOT_COUNT = 5;
 const MOBILE_SLOT_COUNT = 1;
 const MOBILE_BREAKPOINT_PX = 900;
 const WHEEL_MIN_DELTA = 1;
-const TOUCH_MIN_DELTA = 18;
+// Require a longer finger movement before switching images on mobile.
+const TOUCH_MIN_DELTA = 52;
 
 function toPanFromRatios(xRatio: number, yRatio: number) {
   const clampedX = Math.max(0, Math.min(1, xRatio));
