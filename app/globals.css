@@ -1,5 +1,5 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 * {
@@ -24,7 +24,6 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #ffffff;
   user-select: none;
 }
 
@@ -32,210 +31,205 @@ body {
   touch-action: none;
 }
 
+/* Panning cursor when zoomed */
+.home-page.is-zoomed canvas { cursor: crosshair; }
+
+/* Hide UI chrome when zoomed in */
+.home-page.is-zoomed .home-menu,
+.home-page.is-zoomed .photo-meta,
+.home-page.is-zoomed .frame-counter,
+.home-page.is-zoomed .scroll-hint {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* ── Close button (zoom exit) ────────────────────────────── */
+
+.zoom-close {
+  position: fixed;
+  top: 1.3rem;
+  right: 1.5rem;
+  z-index: 30;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.zoom-close::before,
+.zoom-close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 1px;
+  background: #000000;
+  transition: opacity 0.18s ease;
+}
+
+.zoom-close::before { transform: translate(-50%, -50%) rotate(45deg); }
+.zoom-close::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+.zoom-close:hover::before,
+.zoom-close:hover::after { opacity: 0.4; }
+
+/* ── Navigation ──────────────────────────────────────────── */
+
 .home-menu {
   position: fixed;
-  top: 1rem;
-  left: 1rem;
+  top: 1.2rem;
+  left: 1.4rem;
   z-index: 25;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.18rem;
+  gap: 0.2rem;
 }
 
 .home-menu p {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #000000 !important;
-  opacity: 1 !important;
+  letter-spacing: 0.14em;
+  color: #000000;
+  cursor: default;
 }
 
 .home-menu__name {
-  margin-bottom: 0.18rem !important;
-  font-size: 1.35rem !important;
-  font-weight: 400 !important;
+  margin-bottom: 0.25rem !important;
+  font-size: 1.2rem !important;
+  font-weight: 300 !important;
   text-transform: none !important;
-  letter-spacing: 0.04em !important;
-  line-height: 1.05;
+  letter-spacing: 0.05em !important;
+  color: #000000 !important;
+  line-height: 1.1;
 }
+
+/* ── Photo metadata — bottom left ───────────────────────── */
+
+.photo-meta {
+  position: fixed;
+  bottom: 1.6rem;
+  left: 1.4rem;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  animation: meta-fade-in 0.5s ease-out forwards;
+  pointer-events: none;
+}
+
+.photo-meta__series {
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.photo-meta__year {
+  font-size: 0.56rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: #000000;
+}
+
+/* ── Frame counter — bottom right ───────────────────────── */
+
+.frame-counter {
+  position: fixed;
+  bottom: 1.6rem;
+  right: 1.6rem;
+  z-index: 25;
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  color: #000000;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Scroll hint — bottom center ────────────────────────── */
 
 .scroll-hint {
   position: fixed;
   left: 50%;
-  bottom: 1.5rem;
+  bottom: 1.6rem;
   transform: translateX(-50%);
   z-index: 26;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   pointer-events: none;
-  transition: opacity 0.18s ease;
-}
-
-.home-page.is-hovering-image .scroll-hint {
-  opacity: 0;
 }
 
 .scroll-hint__label {
-  font-size: 0.58rem;
+  font-size: 0.5rem;
   font-weight: 400;
-  letter-spacing: 0.26em;
+  letter-spacing: 0.38em;
   text-transform: uppercase;
-  color: #000000 !important;
-  opacity: 1 !important;
+  color: #000000;
 }
 
 .scroll-hint__line {
   width: 1px;
-  height: 4.2rem;
+  height: 3.4rem;
   background-image: linear-gradient(
     to bottom,
-    rgba(17, 17, 17, 0.2) 0 35%,
-    rgba(17, 17, 17, 0.9) 35% 60%,
-    rgba(17, 17, 17, 0.2) 60% 100%
+    rgba(17, 17, 17, 0.08) 0 30%,
+    rgba(17, 17, 17, 0.55) 30% 60%,
+    rgba(17, 17, 17, 0.08) 60% 100%
   );
-  background-size: 100% 210%;
-  animation: scroll-hint-flow 1.5s ease-in-out infinite;
+  background-size: 100% 220%;
+  animation: scroll-hint-flow 1.8s ease-in-out infinite;
 }
 
-.gallery-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
+/* ── Animations ──────────────────────────────────────────── */
 
-.slot-shell {
-  position: absolute;
-  z-index: 20;
-  transition: opacity 0.18s ease;
-}
-
-.slot-shell.is-hovered {
-  z-index: 30;
-}
-
-.gallery-stage.is-hovering .slot-shell:not(.is-hovered) {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.photo-card {
-  width: 100%;
-}
-
-.photo-slot {
-  display: block;
-  width: 100%;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  appearance: none;
-  cursor: crosshair;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
-}
-
-.slot-shell.is-hovered .photo-slot {
-  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.35);
-}
-
-.photo-slot__image {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.immersive-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 8;
-  pointer-events: none;
-  background: rgba(255, 255, 255, 0.74);
-}
-
-.immersive-overlay__image {
-  position: absolute;
-  inset: 0;
-  background-repeat: no-repeat;
-  /* Keep aspect ratio while adding slight extra room for panning. */
-  background-size: 108%;
-}
-
-.mobile-overlay-close {
-  position: fixed;
-  inset: 0;
-  z-index: 12;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  appearance: none;
+@keyframes meta-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
 
 @keyframes scroll-hint-flow {
-  0% {
-    background-position: 0 0%;
-  }
-  100% {
-    background-position: 0 100%;
-  }
+  0%   { background-position: 0 0%;   }
+  100% { background-position: 0 100%; }
 }
 
-@media (max-width: 1024px) {
-  .home-menu {
-    top: 0.9rem;
-    left: 0.8rem;
-  }
+/* ── Responsive ──────────────────────────────────────────── */
 
-  .home-menu p {
-    font-size: 0.72rem;
+@media (max-width: 900px) {
+  .home-menu {
+    top: 1rem;
+    left: 1rem;
   }
 
   .home-menu__name {
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
+  }
+
+  .photo-meta,
+  .frame-counter {
+    bottom: 1.2rem;
+  }
+
+  .photo-meta {
+    left: 1rem;
+  }
+
+  .frame-counter {
+    right: 1rem;
   }
 
   .scroll-hint {
-    left: 50%;
-    bottom: 1rem;
+    bottom: 1.2rem;
   }
-
-  .scroll-hint__label {
-    font-size: 0.52rem;
-    letter-spacing: 0.2em;
-  }
-
-  .scroll-hint__line {
-    height: 3.6rem;
-  }
-
-  .gallery-stage.is-mobile {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 0;
-    padding: 5.2rem 1rem 4rem;
-  }
-
-  .gallery-stage.is-mobile .slot-shell {
-    position: static;
-    width: min(88vw, 560px) !important;
-    left: auto !important;
-    top: auto !important;
-  }
-
-  .gallery-stage.is-mobile .photo-slot {
-    width: 100%;
-    cursor: pointer;
-  }
-
-  .gallery-stage.is-mobile .photo-slot__image {
-    width: 100%;
-    height: auto;
-  }
-
 }
-

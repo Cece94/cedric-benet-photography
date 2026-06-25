@@ -1,285 +1,117 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { GalleryStage, type StageSlot } from "@/components/GalleryStage";
-import { ImmersiveHover } from "@/components/ImmersiveHover";
-import { photos, slotLayouts } from "@/lib/gallery";
-
-type SceneState = {
-  slots: StageSlot[];
-  nextImageIndex: number;
-  stepCount: number;
-};
-
-const DESKTOP_SLOT_COUNT = 5;
-const MOBILE_SLOT_COUNT = 1;
-const MOBILE_BREAKPOINT_PX = 900;
-const WHEEL_MIN_DELTA = 1;
-// Require a longer finger movement before switching images on mobile.
-const TOUCH_MIN_DELTA = 52;
-
-function toPanFromRatios(xRatio: number, yRatio: number) {
-  const clampedX = Math.max(0, Math.min(1, xRatio));
-  const clampedY = Math.max(0, Math.min(1, yRatio));
-
-  return {
-    x: 14 + clampedX * 72,
-    y: 16 + clampedY * 68
-  };
-}
-
-function getInitialState(slotCount: number): SceneState {
-  const initialSlots: StageSlot[] = Array.from({ length: slotCount }, (_, index) => ({
-    id: index,
-    imageIndex: index % photos.length,
-    // Keep one dedicated lane per slot to prevent layout overlap.
-    layoutIndex: index % slotLayouts.length,
-    version: 0
-  }));
-
-  return {
-    slots: initialSlots,
-    nextImageIndex: slotCount % photos.length,
-    stepCount: 0
-  };
-}
-
-function cloneScene(scene: SceneState): SceneState {
-  return {
-    slots: scene.slots.map((slot) => ({ ...slot })),
-    nextImageIndex: scene.nextImageIndex,
-    stepCount: scene.stepCount
-  };
-}
+import { CanvasGallery, type CanvasGalleryHandle } from "@/components/CanvasGallery";
+import { photos } from "@/lib/gallery";
 
 export default function HomePage() {
+  const [uiStep, setUiStep]     = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const slotCount = isMobile ? MOBILE_SLOT_COUNT : DESKTOP_SLOT_COUNT;
+  const [isZoomed, setIsZoomed] = useState(false);
 
-  const [scene, setScene] = useState<SceneState>(() => getInitialState(DESKTOP_SLOT_COUNT));
-  const [hoveredSlotId, setHoveredSlotId] = useState<number | null>(null);
-  const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
-  const [pan, setPan] = useState({ x: 50, y: 50 });
+  const stepRef       = useRef(0);
+  const galleryRef    = useRef<CanvasGalleryHandle>(null);
+  const frameRef      = useRef<number | null>(null);
+  const pendingRef    = useRef<1 | -1 | null>(null);
+  const touchStartRef = useRef<number | null>(null);
 
-  const historyRef = useRef<SceneState[]>([]);
-  const pendingDirectionRef = useRef<1 | -1 | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
+  useEffect(() => {
+    const mq   = window.matchMedia("(max-width: 900px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
-  const advanceScene = useCallback((direction: 1 | -1) => {
-    setScene((previous) => {
-      if (direction === -1) {
-        const restored = historyRef.current.pop();
-        return restored ?? previous;
-      }
+  const advance = useCallback((dir: 1 | -1) => {
+    const next = Math.max(0, Math.min(photos.length - 1, stepRef.current + dir));
+    if (next === stepRef.current) return;
+    stepRef.current = next;
+    // Drive the canvas directly — no React re-render in the critical path.
+    galleryRef.current?.goTo(next);
+    // Update UI labels asynchronously (a frame late is fine for text).
+    setUiStep(next);
+  }, []);
 
-      // Save one step before replacing the next slot.
-      historyRef.current.push(cloneScene(previous));
-
-      const targetSlotId = previous.stepCount % slotCount;
-      const updatedSlots = previous.slots.map((slot) => {
-        if (slot.id !== targetSlotId) {
-          return slot;
-        }
-
-        return {
-          ...slot,
-          imageIndex: previous.nextImageIndex,
-          version: slot.version + 1
-        };
-      });
-
-      return {
-        slots: updatedSlots,
-        nextImageIndex: (previous.nextImageIndex + 1) % photos.length,
-        stepCount: previous.stepCount + 1
-      };
-    });
-  }, [slotCount]);
-
-  const flushPendingScroll = useCallback(() => {
+  const flush = useCallback(() => {
     frameRef.current = null;
-    const direction = pendingDirectionRef.current;
-    pendingDirectionRef.current = null;
-    if (direction === null) {
-      return;
-    }
+    const dir = pendingRef.current;
+    pendingRef.current = null;
+    if (dir !== null) advance(dir);
+  }, [advance]);
 
-    advanceScene(direction);
-  }, [advanceScene]);
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (isZoomed) return; // block navigation while zoomed in
+    e.preventDefault();
+    if (Math.abs(e.deltaY) < 1) return;
+    pendingRef.current = e.deltaY > 0 ? 1 : -1;
+    if (frameRef.current === null) frameRef.current = requestAnimationFrame(flush);
+  }, [flush, isZoomed]);
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
-    const syncViewportMode = () => {
-      setIsMobile(mediaQuery.matches);
-    };
-    syncViewportMode();
-    mediaQuery.addEventListener("change", syncViewportMode);
-
-    return () => {
-      mediaQuery.removeEventListener("change", syncViewportMode);
-    };
+  const handleTouchStart = useCallback((y: number) => {
+    touchStartRef.current = y;
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (frameRef.current !== null) {
-        window.cancelAnimationFrame(frameRef.current);
-      }
-    };
+  const handleTouchMove = useCallback((y: number) => {
+    if (isZoomed) return;
+    const start = touchStartRef.current;
+    if (start === null) return;
+    const delta = start - y;
+    if (Math.abs(delta) < 52) return;
+    touchStartRef.current = y;
+    pendingRef.current = delta > 0 ? 1 : -1;
+    if (frameRef.current === null) frameRef.current = requestAnimationFrame(flush);
+  }, [flush, isZoomed]);
+
+  useEffect(() => () => {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
   }, []);
 
-  useEffect(() => {
-    // Preload only upcoming images to keep swaps instant without network spikes.
-    const nextPhoto = photos[scene.nextImageIndex];
-    const afterNextPhoto = photos[(scene.nextImageIndex + 1) % photos.length];
-    [nextPhoto, afterNextPhoto].forEach((photo) => {
-      const img = new window.Image();
-      img.src = photo.src.src;
-    });
-  }, [scene.nextImageIndex]);
-
-  const handleWheel = useCallback(
-    (event: WheelEvent<HTMLElement>) => {
-      if (expandedImageSrc) {
-        return;
-      }
-
-      event.preventDefault();
-      if (Math.abs(event.deltaY) < WHEEL_MIN_DELTA) {
-        return;
-      }
-
-      if (hoveredSlotId !== null) {
-        setHoveredSlotId(null);
-      }
-
-      pendingDirectionRef.current = event.deltaY > 0 ? 1 : -1;
-      if (frameRef.current === null) {
-        // Process once per frame to stay instant while avoiding render floods.
-        frameRef.current = window.requestAnimationFrame(flushPendingScroll);
-      }
-    },
-    [expandedImageSrc, flushPendingScroll, hoveredSlotId]
-  );
-
-  const hoveredImageSrc = useMemo(() => {
-    if (hoveredSlotId === null) {
-      return null;
-    }
-
-    const hoveredSlot = scene.slots.find((slot) => slot.id === hoveredSlotId);
-    return hoveredSlot ? photos[hoveredSlot.imageIndex].src.src : null;
-  }, [hoveredSlotId, scene.slots]);
-
-  const handleHoverMove = useCallback((slotId: number, xRatio: number, yRatio: number) => {
-    if (hoveredSlotId !== slotId) {
-      return;
-    }
-
-    // Cursor position in thumbnail controls the visible area of the zoomed background.
-    setPan(toPanFromRatios(xRatio, yRatio));
-  }, [hoveredSlotId]);
-
-  const handleTouchStart = useCallback((touchY: number) => {
-    touchStartYRef.current = touchY;
-  }, []);
-
-  const handleTouchMove = useCallback((touchY: number) => {
-    if (!isMobile || expandedImageSrc) {
-      return;
-    }
-    const startY = touchStartYRef.current;
-    if (startY === null) {
-      return;
-    }
-
-    const deltaY = startY - touchY;
-    if (Math.abs(deltaY) < TOUCH_MIN_DELTA) {
-      return;
-    }
-
-    // Reset baseline after each accepted swipe step for smooth carousel scrolling.
-    touchStartYRef.current = touchY;
-    pendingDirectionRef.current = deltaY > 0 ? 1 : -1;
-    if (frameRef.current === null) {
-      frameRef.current = window.requestAnimationFrame(flushPendingScroll);
-    }
-  }, [expandedImageSrc, flushPendingScroll, isMobile]);
-
-  const immersiveImageSrc = isMobile ? expandedImageSrc : hoveredImageSrc;
-  const visibleSlots = useMemo(() => scene.slots.slice(0, slotCount), [scene.slots, slotCount]);
+  const current = photos[uiStep];
+  const counter = `${String(uiStep + 1).padStart(2, "0")} / ${String(photos.length).padStart(2, "0")}`;
 
   return (
     <main
-      className={`home-page ${hoveredSlotId !== null || expandedImageSrc ? "is-hovering-image" : ""} ${isMobile ? "is-mobile" : ""}`}
+      className={`home-page${isMobile ? " is-mobile" : ""}${isZoomed ? " is-zoomed" : ""}`}
       onWheel={handleWheel}
-      onTouchStart={(event) => handleTouchStart(event.touches[0].clientY)}
-      onTouchMove={(event) => {
-        handleTouchMove(event.touches[0].clientY);
-        if (isMobile && !expandedImageSrc) {
-          event.preventDefault();
-        }
+      onTouchStart={e => handleTouchStart(e.touches[0].clientY)}
+      onTouchMove={e => {
+        handleTouchMove(e.touches[0].clientY);
+        if (isMobile) e.preventDefault();
       }}
-      onTouchEnd={() => {
-        touchStartYRef.current = null;
-      }}
+      onTouchEnd={() => { touchStartRef.current = null; }}
     >
-      <ImmersiveHover imageSrc={immersiveImageSrc} panX={pan.x} panY={pan.y} />
+      <CanvasGallery ref={galleryRef} onZoomChange={setIsZoomed} />
 
       <nav className="home-menu" aria-label="Main menu">
         <p className="home-menu__name">Cédric Benet</p>
         <p>Instagram</p>
-        <p>A propos</p>
+        <p>À propos</p>
         <p>Contact</p>
       </nav>
-      <div className="scroll-hint" aria-hidden="true">
-        <span className="scroll-hint__label">Scroll to explore gallery</span>
-        <span className="scroll-hint__line" />
+
+      {isZoomed && (
+        <button
+          className="zoom-close"
+          onClick={() => galleryRef.current?.exitZoom()}
+          aria-label="Fermer"
+        />
+      )}
+
+      <div key={uiStep} className="photo-meta">
+        <span className="photo-meta__series">{current.series}</span>
+        <span className="photo-meta__year">{current.year}</span>
       </div>
 
-      {/* Hide the mobile thumbnail while the fullscreen view is open. */}
-      {!(isMobile && expandedImageSrc) ? (
-        <GalleryStage
-          slots={visibleSlots}
-          isMobile={isMobile}
-          hoveredSlotId={hoveredSlotId}
-          onImageClick={(slotId) => {
-            if (!isMobile) {
-              return;
-            }
-            const clickedSlot = visibleSlots.find((slot) => slot.id === slotId);
-            if (!clickedSlot) {
-              return;
-            }
-            setExpandedImageSrc(photos[clickedSlot.imageIndex].src.src);
-          }}
-          onHoverStart={(slotId, xRatio, yRatio) => {
-            if (isMobile) {
-              return;
-            }
-            setHoveredSlotId(slotId);
-            setPan(toPanFromRatios(xRatio, yRatio));
-          }}
-          onHoverEnd={() => {
-            if (isMobile) {
-              return;
-            }
-            setHoveredSlotId(null);
-          }}
-          onHoverMove={handleHoverMove}
-        />
-      ) : null}
+      <p className="frame-counter">{counter}</p>
 
-      {isMobile && expandedImageSrc ? (
-        <button
-          type="button"
-          className="mobile-overlay-close"
-          onClick={() => setExpandedImageSrc(null)}
-          aria-label="Close image"
-        />
-      ) : null}
+      {uiStep < photos.length - 1 && (
+        <div className="scroll-hint" aria-hidden="true">
+          <span className="scroll-hint__label">Scroll</span>
+          <span className="scroll-hint__line" />
+        </div>
+      )}
     </main>
   );
 }
