@@ -1,168 +1,116 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useMotionValue, useSpring } from "framer-motion";
 
-import { CanvasGallery } from "@/components/CanvasGallery";
-import { ImmersiveHover } from "@/components/ImmersiveHover";
+import { CanvasGallery, type CanvasGalleryHandle } from "@/components/CanvasGallery";
 import { photos } from "@/lib/gallery";
 
-const MOBILE_BREAKPOINT_PX = 900;
-const WHEEL_MIN_DELTA = 1;
-const TOUCH_MIN_DELTA = 52;
-const TOTAL_ITEMS = photos.length * 10;
-
-function toPanFromRatios(xRatio: number, yRatio: number) {
-  const cx = Math.max(0, Math.min(1, xRatio));
-  const cy = Math.max(0, Math.min(1, yRatio));
-  return { x: 14 + cx * 72, y: 16 + cy * 68 };
-}
-
-// Returns the pixel distance the track moves per scroll step.
-function getStepPx(mobile: boolean): number {
-  const vw = window.innerWidth;
-  if (mobile) return vw * 0.92;
-  return Math.max(240, Math.min(420, vw * 0.22)) + vw * 0.02;
-}
-
 export default function HomePage() {
+  const [uiStep, setUiStep]     = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
-  const [pan, setPan] = useState({ x: 50, y: 50 });
+  const [isZoomed, setIsZoomed] = useState(false);
 
-  const stepRef = useRef(0);
-  const frameRef = useRef<number | null>(null);
-  const pendingDirRef = useRef<1 | -1 | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
-  const isMobileRef = useRef(false);
-
-  // Keep ref in sync so scroll callbacks always read the latest value.
-  useEffect(() => { isMobileRef.current = isMobile; }, [isMobile]);
-
-  const xRaw = useMotionValue(0);
-  const xSpring = useSpring(xRaw, { stiffness: 55, damping: 16, mass: 0.9 });
-
-  // Realign track on resize.
-  useEffect(() => {
-    const onResize = () => {
-      xRaw.set(-stepRef.current * getStepPx(isMobileRef.current));
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [xRaw]);
-
-  const advance = useCallback((direction: 1 | -1) => {
-    const next = stepRef.current + direction;
-    if (next < 0 || next >= TOTAL_ITEMS - 1) return;
-    stepRef.current = next;
-    xRaw.set(-next * getStepPx(isMobileRef.current));
-  }, [xRaw]);
-
-  const flushPending = useCallback(() => {
-    frameRef.current = null;
-    const dir = pendingDirRef.current;
-    pendingDirRef.current = null;
-    if (dir !== null) advance(dir);
-  }, [advance]);
-
-  useEffect(() => () => {
-    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-  }, []);
+  const stepRef       = useRef(0);
+  const galleryRef    = useRef<CanvasGalleryHandle>(null);
+  const frameRef      = useRef<number | null>(null);
+  const pendingRef    = useRef<1 | -1 | null>(null);
+  const touchStartRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const mq   = window.matchMedia("(max-width: 900px)");
     const sync = () => setIsMobile(mq.matches);
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const handleWheel = useCallback((event: React.WheelEvent<HTMLElement>) => {
-    if (expandedImageSrc) return;
-    event.preventDefault();
-    if (Math.abs(event.deltaY) < WHEEL_MIN_DELTA) return;
-    if (hoveredIndex !== null) setHoveredIndex(null);
-    pendingDirRef.current = event.deltaY > 0 ? 1 : -1;
-    if (frameRef.current === null) {
-      frameRef.current = requestAnimationFrame(flushPending);
-    }
-  }, [expandedImageSrc, flushPending, hoveredIndex]);
+  const advance = useCallback((dir: 1 | -1) => {
+    const next = Math.max(0, Math.min(photos.length - 1, stepRef.current + dir));
+    if (next === stepRef.current) return;
+    stepRef.current = next;
+    // Drive the canvas directly — no React re-render in the critical path.
+    galleryRef.current?.goTo(next);
+    // Update UI labels asynchronously (a frame late is fine for text).
+    setUiStep(next);
+  }, []);
+
+  const flush = useCallback(() => {
+    frameRef.current = null;
+    const dir = pendingRef.current;
+    pendingRef.current = null;
+    if (dir !== null) advance(dir);
+  }, [advance]);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (isZoomed) return; // block navigation while zoomed in
+    e.preventDefault();
+    if (Math.abs(e.deltaY) < 1) return;
+    pendingRef.current = e.deltaY > 0 ? 1 : -1;
+    if (frameRef.current === null) frameRef.current = requestAnimationFrame(flush);
+  }, [flush, isZoomed]);
 
   const handleTouchStart = useCallback((y: number) => {
-    touchStartYRef.current = y;
+    touchStartRef.current = y;
   }, []);
 
   const handleTouchMove = useCallback((y: number) => {
-    if (!isMobile || expandedImageSrc) return;
-    const startY = touchStartYRef.current;
-    if (startY === null) return;
-    const delta = startY - y;
-    if (Math.abs(delta) < TOUCH_MIN_DELTA) return;
-    touchStartYRef.current = y;
-    pendingDirRef.current = delta > 0 ? 1 : -1;
-    if (frameRef.current === null) {
-      frameRef.current = requestAnimationFrame(flushPending);
-    }
-  }, [expandedImageSrc, flushPending, isMobile]);
+    if (isZoomed) return;
+    const start = touchStartRef.current;
+    if (start === null) return;
+    const delta = start - y;
+    if (Math.abs(delta) < 52) return;
+    touchStartRef.current = y;
+    pendingRef.current = delta > 0 ? 1 : -1;
+    if (frameRef.current === null) frameRef.current = requestAnimationFrame(flush);
+  }, [flush, isZoomed]);
 
-  const hoveredPhoto = hoveredIndex !== null ? photos[hoveredIndex % photos.length] : null;
-  const immersiveImageSrc = isMobile ? expandedImageSrc : (hoveredPhoto?.src.src ?? null);
+  useEffect(() => () => {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+  }, []);
+
+  const current = photos[uiStep];
+  const counter = `${String(uiStep + 1).padStart(2, "0")} / ${String(photos.length).padStart(2, "0")}`;
 
   return (
     <main
-      className={`home-page ${hoveredIndex !== null || expandedImageSrc ? "is-hovering-image" : ""} ${isMobile ? "is-mobile" : ""}`}
+      className={`home-page${isMobile ? " is-mobile" : ""}${isZoomed ? " is-zoomed" : ""}`}
       onWheel={handleWheel}
-      onTouchStart={(e) => handleTouchStart(e.touches[0].clientY)}
-      onTouchMove={(e) => {
+      onTouchStart={e => handleTouchStart(e.touches[0].clientY)}
+      onTouchMove={e => {
         handleTouchMove(e.touches[0].clientY);
-        if (isMobile && !expandedImageSrc) e.preventDefault();
+        if (isMobile) e.preventDefault();
       }}
-      onTouchEnd={() => { touchStartYRef.current = null; }}
+      onTouchEnd={() => { touchStartRef.current = null; }}
     >
-      <ImmersiveHover imageSrc={immersiveImageSrc} panX={pan.x} panY={pan.y} />
+      <CanvasGallery ref={galleryRef} onZoomChange={setIsZoomed} />
 
       <nav className="home-menu" aria-label="Main menu">
         <p className="home-menu__name">Cédric Benet</p>
         <p>Instagram</p>
-        <p>A propos</p>
+        <p>À propos</p>
         <p>Contact</p>
       </nav>
 
-      <div className="scroll-hint" aria-hidden="true">
-        <span className="scroll-hint__label">Scroll to explore gallery</span>
-        <span className="scroll-hint__line" />
-      </div>
-
-      {!(isMobile && expandedImageSrc) && (
-        <CanvasGallery
-          xSpring={xSpring}
-          isMobile={isMobile}
-          hoveredIndex={hoveredIndex}
-          onHoverStart={(index, xr, yr) => {
-            if (isMobile) return;
-            setHoveredIndex(index);
-            setPan(toPanFromRatios(xr, yr));
-          }}
-          onHoverEnd={() => { if (!isMobile) setHoveredIndex(null); }}
-          onHoverMove={(index, xr, yr) => {
-            if (hoveredIndex !== index) return;
-            setPan(toPanFromRatios(xr, yr));
-          }}
-          onImageClick={(index) => {
-            if (!isMobile) return;
-            setExpandedImageSrc(photos[index % photos.length].src.src);
-          }}
+      {isZoomed && (
+        <button
+          className="zoom-close"
+          onClick={() => galleryRef.current?.exitZoom()}
+          aria-label="Fermer"
         />
       )}
 
-      {isMobile && expandedImageSrc && (
-        <button
-          type="button"
-          className="mobile-overlay-close"
-          onClick={() => setExpandedImageSrc(null)}
-          aria-label="Close image"
-        />
+      <div key={uiStep} className="photo-meta">
+        <span className="photo-meta__series">{current.series}</span>
+        <span className="photo-meta__year">{current.year}</span>
+      </div>
+
+      <p className="frame-counter">{counter}</p>
+
+      {uiStep < photos.length - 1 && (
+        <div className="scroll-hint" aria-hidden="true">
+          <span className="scroll-hint__label">Scroll</span>
+          <span className="scroll-hint__line" />
+        </div>
       )}
     </main>
   );

@@ -1,276 +1,228 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
-import { useMotionValueEvent, type MotionValue } from "framer-motion";
-
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { photos } from "@/lib/gallery";
 
-const TOTAL_ITEMS = photos.length * 10;
-const DEG = Math.PI / 180;
+const ZOOM_DURATION = 400; // ms
 
-function smoothstep(t: number): number {
-  const c = Math.max(0, Math.min(1, t));
-  return c * c * (3 - 2 * c);
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
 
-// Same formula as getStepPx in page.tsx — must stay in sync.
-function computeStep(vw: number, mobile: boolean): number {
-  if (mobile) return vw * 0.92;
-  return Math.max(240, Math.min(420, vw * 0.22)) + vw * 0.02;
+function drawPhoto(
+  ctx: CanvasRenderingContext2D,
+  source: HTMLImageElement | ImageBitmap,
+  x: number, y: number,
+  w: number, h: number,
+) {
+  if (!source) return;
+  if (source instanceof HTMLImageElement && (!source.complete || !source.naturalWidth)) return;
+  ctx.drawImage(source, x, y, w, h);
 }
 
-function computeItemW(vw: number, mobile: boolean): number {
-  if (mobile) return Math.min(vw * 0.88, 560);
-  return Math.max(240, Math.min(420, vw * 0.22));
-}
-
-// Returns the smoothstep progress (0 = straight/left, 1 = fully tilted far right).
-function getT(centerX: number, vw: number): number {
-  const dist = centerX - vw * 0.3;
-  if (dist <= 0) return 0;
-  return smoothstep(dist / (vw * 1.6));
-}
-
-type HitItem = {
-  index: number;
-  cx: number;
-  cy: number;
-  hw: number; // half draw-width
-  hh: number; // half draw-height
-  cosA: number; // cos(-rotZ) for inverse hit transform
-  sinA: number; // sin(-rotZ)
+export type CanvasGalleryHandle = {
+  goTo: (step: number) => void;
+  exitZoom: () => void;
 };
 
-export type CanvasGalleryProps = {
-  xSpring: MotionValue<number>;
-  isMobile: boolean;
-  hoveredIndex: number | null;
-  onHoverStart: (index: number, xr: number, yr: number) => void;
-  onHoverEnd: () => void;
-  onHoverMove: (index: number, xr: number, yr: number) => void;
-  onImageClick: (index: number) => void;
+type Props = {
+  onZoomChange?: (zoomed: boolean) => void;
 };
 
-export function CanvasGallery({
-  xSpring,
-  isMobile,
-  hoveredIndex,
-  onHoverStart,
-  onHoverEnd,
-  onHoverMove,
-  onImageClick,
-}: CanvasGalleryProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imgsRef = useRef<HTMLImageElement[]>([]);
-  const hitRef = useRef<HitItem[]>([]);
-  const isMobileRef = useRef(isMobile);
-  const hoveredRef = useRef(hoveredIndex);
-  const fadeRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
+export const CanvasGallery = forwardRef<CanvasGalleryHandle, Props>(
+  function CanvasGallery({ onZoomChange }, ref) {
+    const canvasRef       = useRef<HTMLCanvasElement>(null);
+    const imgsRef         = useRef<HTMLImageElement[]>([]);
+    const bitmapsRef      = useRef<(ImageBitmap | null)[]>([]);
+    const stepRef         = useRef(0);
+    const zoomProgressRef = useRef(0);      // 0 = normal, 1 = fully zoomed
+    const isZoomedRef     = useRef(false);  // true once zoom-in animation completes
+    const zoomRafRef      = useRef<number | null>(null);
+    const mouseRef        = useRef({ x: 0.5, y: 0.5 }); // normalized screen position
+    const onZoomChangeRef = useRef(onZoomChange);
+    useEffect(() => { onZoomChangeRef.current = onZoomChange; }, [onZoomChange]);
 
-  useEffect(() => { isMobileRef.current = isMobile; }, [isMobile]);
-  useEffect(() => { hoveredRef.current = hoveredIndex; }, [hoveredIndex]);
+    // Compute where to draw the current photo given zoom progress and mouse pan.
+    const computeDraw = useCallback((vw: number, vh: number, zp: number) => {
+      const idx = stepRef.current;
+      // Prefer ImageBitmap (GPU-decoded) over HTMLImageElement.
+      const source = bitmapsRef.current[idx] ?? imgsRef.current[idx];
+      const img    = imgsRef.current[idx];
+      if (!img?.complete || !img.naturalWidth) return null;
 
-  // Preload all images; trigger a redraw when the last one is ready.
-  useEffect(() => {
-    let loaded = 0;
-    imgsRef.current = photos.map((photo) => {
-      const img = new window.Image();
-      img.onload = () => {
-        loaded++;
-        if (loaded === photos.length) redraw();
-      };
-      img.src = photo.src.src;
-      return img;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      // Normal: object-fit contain in 88% × 78% of screen.
+      const maxW = vw * 0.88, maxH = vh * 0.78;
+      const ia = img.naturalWidth / img.naturalHeight;
+      const ba = maxW / maxH;
+      let fw: number, fh: number;
+      if (ia > ba) { fw = maxW; fh = maxW / ia; }
+      else         { fw = maxH * ia; fh = maxH; }
 
-  const redraw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      // Zoomed: cover full screen, computed from the image's natural aspect ratio
+      // so portrait photos scale to fill screen width (not based on small display dims).
+      const natIA = img.naturalWidth / img.naturalHeight;
+      let fwCover: number, fhCover: number;
+      if (natIA > vw / vh) { fhCover = vh; fwCover = vh * natIA; }
+      else                 { fwCover = vw; fhCover = vw / natIA; }
+      const fwZ = fwCover * 1.12;
+      const fhZ = fhCover * 1.12;
 
-    const dpr = window.devicePixelRatio || 1;
-    const vw = canvas.width / dpr;
-    const vh = canvas.height / dpr;
+      // Interpolate size.
+      const drawW = fw + (fwZ - fw) * zp;
+      const drawH = fh + (fhZ - fh) * zp;
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, vw, vh);
+      // Pan: mouse at center = no offset; edges = max offset.
+      // Negated so moving mouse right reveals the right side of the image.
+      const maxPanX = Math.max(0, (fwZ - vw) / 2);
+      const maxPanY = Math.max(0, (fhZ - vh) / 2);
+      const panX = -(mouseRef.current.x - 0.5) * maxPanX * 2 * zp;
+      const panY = -(mouseRef.current.y - 0.5) * maxPanY * 2 * zp;
 
-    const mobile = isMobileRef.current;
-    const step = computeStep(vw, mobile);
-    const itemW = computeItemW(vw, mobile);
-    const itemH = itemW * 1.5; // 2:3 portrait frame
-    const pad = vw * 0.05;
-    const baseCY = vh * 0.5;
-    const trackX = xSpring.get();
-    const hovered = hoveredRef.current;
-    const fade = fadeRef.current;
+      return { source, x: vw / 2 - drawW / 2 + panX, y: vh / 2 - drawH / 2 + panY, drawW, drawH };
+    }, []);
 
-    const newHits: HitItem[] = [];
+    const redraw = useCallback(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    for (let i = 0; i < TOTAL_ITEMS; i++) {
-      const img = imgsRef.current[i % photos.length];
-      const cx = trackX + pad + i * step + itemW * 0.5;
-
-      // Generous cull margin so partially tilted cards aren't clipped.
-      if (cx + itemW * 2 < 0 || cx - itemW * 2 > vw) continue;
-
-      const t = getT(cx, vw);
-
-      // Same parameters tuned on the CSS branch.
-      const rotZ = t * 9 * DEG;
-      const sY = 1 - t * 0.35;
-      // Combine base X scale with perspective foreshortening (rotateY simulation).
-      const sX = (1 - t * 0.12) * Math.cos(t * 18 * DEG);
-
-      const drawW = itemW * sX;
-      const drawH = itemH * sY;
-
-      // Dim non-hovered items to near-invisible.
-      const itemAlpha = hovered !== null && hovered !== i ? 0.07 : 1;
-
-      ctx.save();
-      ctx.translate(cx, baseCY);
-      ctx.rotate(rotZ);
-      ctx.globalAlpha = fade * itemAlpha;
-
-      // Shadow under the white frame.
-      ctx.shadowColor = "rgba(0,0,0,0.18)";
-      ctx.shadowBlur = 30;
-      ctx.shadowOffsetY = 10;
-
-      // White mat frame (same as CSS aspect-ratio + white bg).
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
-
-      // Draw image with object-fit: contain inside the frame.
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-
-      if (img?.complete && img.naturalWidth > 0) {
-        const ia = img.naturalWidth / img.naturalHeight;
-        const fa = drawW / drawH;
-        let iw = drawW, ih = drawH, ix = -drawW / 2, iy = -drawH / 2;
-
-        if (ia > fa) {
-          // Image wider than frame → fit width, white bars top/bottom.
-          ih = drawW / ia;
-          iy = -ih / 2;
-        } else {
-          // Image taller → fit height, white bars left/right.
-          iw = drawH * ia;
-          ix = -iw / 2;
-        }
-
-        ctx.drawImage(img, ix, iy, iw, ih);
-      }
-
-      ctx.restore();
-
-      newHits.push({
-        index: i,
-        cx,
-        cy: baseCY,
-        hw: drawW / 2,
-        hh: drawH / 2,
-        cosA: Math.cos(-rotZ),
-        sinA: Math.sin(-rotZ),
-      });
-    }
-
-    hitRef.current = newHits;
-  }, [xSpring]);
-
-  // Initial fade-in over 700 ms.
-  useEffect(() => {
-    const DURATION = 700;
-    let start: number | null = null;
-    const tick = (ts: number) => {
-      if (!start) start = ts;
-      fadeRef.current = Math.min(1, (ts - start) / DURATION);
-      redraw();
-      if (fadeRef.current < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [redraw]);
-
-  // Redraw on every scroll frame.
-  useMotionValueEvent(xSpring, "change", redraw);
-
-  // Redraw when hover state changes.
-  useEffect(() => { redraw(); }, [hoveredIndex, redraw]);
-
-  // Resize the canvas physical pixel buffer on window resize.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      redraw();
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, [redraw]);
+      const vw  = canvas.width  / dpr;
+      const vh  = canvas.height / dpr;
 
-  // Returns the topmost hit item under screen point (mx, my).
-  const hitTest = useCallback((mx: number, my: number): HitItem | null => {
-    const hits = hitRef.current;
-    for (let i = hits.length - 1; i >= 0; i--) {
-      const h = hits[i];
-      const dx = mx - h.cx;
-      const dy = my - h.cy;
-      // Rotate point into the item's local (un-rotated) space.
-      const lx = dx * h.cosA - dy * h.sinA;
-      const ly = dx * h.sinA + dy * h.cosA;
-      if (Math.abs(lx) <= h.hw && Math.abs(ly) <= h.hh) return h;
-    }
-    return null;
-  }, []);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, vw, vh);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isMobile) return;
-    const r = canvasRef.current!.getBoundingClientRect();
-    const mx = e.clientX - r.left;
-    const my = e.clientY - r.top;
-    const hit = hitTest(mx, my);
-    if (hit) {
-      const xr = Math.max(0, Math.min(1, (mx - (hit.cx - hit.hw)) / (hit.hw * 2)));
-      const yr = Math.max(0, Math.min(1, (my - (hit.cy - hit.hh)) / (hit.hh * 2)));
-      if (hoveredIndex !== hit.index) onHoverStart(hit.index, xr, yr);
-      else onHoverMove(hit.index, xr, yr);
-    } else if (hoveredIndex !== null) {
-      onHoverEnd();
-    }
-  };
+      const d = computeDraw(vw, vh, zoomProgressRef.current);
+      if (d) drawPhoto(ctx, d.source, d.x, d.y, d.drawW, d.drawH);
+    }, [computeDraw]);
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const r = canvasRef.current!.getBoundingClientRect();
-    const hit = hitTest(e.clientX - r.left, e.clientY - r.top);
-    if (hit) onImageClick(hit.index);
-  };
+    // Animate zoom in (zoomIn=true) or out (zoomIn=false).
+    const startZoom = useCallback((zoomIn: boolean) => {
+      if (zoomRafRef.current !== null) cancelAnimationFrame(zoomRafRef.current);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "block",
-        cursor: hoveredIndex !== null ? "crosshair" : "default",
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => { if (!isMobile) onHoverEnd(); }}
-      onClick={handleClick}
-    />
-  );
-}
+      const startProgress = zoomProgressRef.current;
+      const startTime     = performance.now();
+      // Scale duration so an interrupted animation doesn't feel slow.
+      const duration = ZOOM_DURATION * (zoomIn ? 1 - startProgress : startProgress);
+
+      const animate = () => {
+        const raw = duration > 0 ? Math.min(1, (performance.now() - startTime) / duration) : 1;
+        const e   = easeInOut(raw);
+        zoomProgressRef.current = zoomIn
+          ? startProgress + e * (1 - startProgress)
+          : startProgress - e * startProgress;
+        redraw();
+
+        if (raw < 1) {
+          zoomRafRef.current = requestAnimationFrame(animate);
+        } else {
+          zoomRafRef.current  = null;
+          zoomProgressRef.current = zoomIn ? 1 : 0;
+          isZoomedRef.current     = zoomIn;
+          onZoomChangeRef.current?.(zoomIn);
+          redraw();
+        }
+      };
+      zoomRafRef.current = requestAnimationFrame(animate);
+    }, [redraw]);
+
+    useImperativeHandle(ref, () => ({
+      goTo(newStep: number) {
+        if (stepRef.current === newStep) return;
+        // Exit zoom instantly when navigating to another photo.
+        if (zoomProgressRef.current > 0) {
+          if (zoomRafRef.current !== null) cancelAnimationFrame(zoomRafRef.current);
+          zoomProgressRef.current = 0;
+          isZoomedRef.current     = false;
+          onZoomChangeRef.current?.(false);
+        }
+        stepRef.current = newStep;
+        redraw();
+      },
+      exitZoom() {
+        if (zoomProgressRef.current > 0) startZoom(false);
+      },
+    }), [redraw, startZoom]);
+
+    // Click: zoom in if normal, zoom out if zoomed.
+    const handleClick = useCallback(() => {
+      if (zoomProgressRef.current > 0.5 || isZoomedRef.current) {
+        startZoom(false);
+      } else {
+        startZoom(true);
+      }
+    }, [startZoom]);
+
+    // Update mouse for pan (only redraws when image is zoomed in).
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+      const r = canvasRef.current!.getBoundingClientRect();
+      mouseRef.current = {
+        x: (e.clientX - r.left) / r.width,
+        y: (e.clientY - r.top)  / r.height,
+      };
+      if (zoomProgressRef.current > 0) redraw();
+    }, [redraw]);
+
+    // Preload images, convert to ImageBitmap (GPU-decoded, zero-copy draws),
+    // then warm up by drawing at screen size so the first zoom frame is instant.
+    useEffect(() => {
+      bitmapsRef.current = new Array(photos.length).fill(null);
+      let loaded = 0;
+
+      imgsRef.current = photos.map((photo, i) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const finish = () => { if (++loaded === photos.length) redraw(); };
+
+          if ("createImageBitmap" in window) {
+            createImageBitmap(img)
+              .then(bm => {
+                bitmapsRef.current[i] = bm;
+                // Warmup: draw at full display size so GPU has the texture ready.
+                try {
+                  const vw = window.innerWidth, vh = window.innerHeight;
+                  const oc = new OffscreenCanvas(vw, vh);
+                  oc.getContext("2d")?.drawImage(bm, 0, 0, vw, vh);
+                } catch { /* ignore */ }
+                finish();
+              })
+              .catch(finish);
+          } else {
+            finish();
+          }
+        };
+        img.src = photo.src.src;
+        return img;
+      });
+    }, [redraw]);
+
+    // Resize canvas buffer on window resize.
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const resize = () => {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width  = window.innerWidth  * dpr;
+        canvas.height = window.innerHeight * dpr;
+        canvas.style.width  = `${window.innerWidth}px`;
+        canvas.style.height = `${window.innerHeight}px`;
+        redraw();
+      };
+      resize();
+      window.addEventListener("resize", resize);
+      return () => window.removeEventListener("resize", resize);
+    }, [redraw]);
+
+    return (
+      <canvas
+        ref={canvasRef}
+        style={{ position: "absolute", inset: 0, display: "block" }}
+        onClick={handleClick}
+        onMouseMove={handleMouseMove}
+      />
+    );
+  }
+);
