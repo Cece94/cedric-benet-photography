@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 
 import "./globals.css";
 
@@ -8,15 +8,21 @@ const inter = Inter({
   variable: "--font-inter"
 });
 
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  variable: "--font-cormorant"
+});
+
 export const metadata: Metadata = {
-  title: "Cedric Benet | Art Photography",
-  description: "Modern black and white art direction to showcase photography."
+  title: "Cédric Benet | Photographie",
+  description: "Photographie de paysage et de nature — Norvège, Islande."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={inter.variable}>{children}</body>
+    <html lang="fr">
+      <body className={`${inter.variable} ${cormorant.variable}`}>{children}</body>
     </html>
   );
 }
