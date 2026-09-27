@@ -35,7 +35,7 @@ export function Hero({ photo }: { photo: PhotoItem }) {
             alt={photo.alt}
             placeholder="blur"
             priority
-            quality={90}
+            quality={100}
             fill
             // Portrait screens crop-and-zoom this landscape photo to cover
             // the full height, so a much wider source is needed than 100vw.

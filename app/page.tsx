@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Hero } from "@/components/Hero";
 import { Lightbox } from "@/components/Lightbox";
 import { PhotoSection } from "@/components/PhotoSection";
+import { ScrollIndicator } from "@/components/ScrollIndicator";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { photos } from "@/lib/gallery";
@@ -18,6 +19,7 @@ export default function HomePage() {
   return (
     <SmoothScroll>
       <SiteHeader />
+      <ScrollIndicator />
 
       <Hero photo={heroPhoto} />
 

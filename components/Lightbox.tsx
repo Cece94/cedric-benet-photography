@@ -59,7 +59,7 @@ export function Lightbox({ index, onClose, onNavigate }: Props) {
               src={photo.src}
               alt={photo.alt}
               placeholder="blur"
-              quality={95}
+              quality={100}
               sizes="100vw"
               className="lightbox__img"
             />

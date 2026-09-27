@@ -45,7 +45,7 @@ export function PhotoSection({ photo, index, total, onOpen }: Props) {
             src={photo.src}
             alt={photo.alt}
             placeholder="blur"
-            quality={90}
+            quality={100}
             sizes="(max-width: 900px) 100vw, 90vw"
             className="photo-section__img"
           />
