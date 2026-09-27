@@ -14,6 +14,10 @@ const OUT_DIR = path.resolve(import.meta.dirname, "..", "photos");
 const MAX_WIDTH = 3840;
 const MAX_HEIGHT = 2560;
 const QUALITY = 90;
+// Very wide images are shown full-height and panned sideways (see
+// PanoramaSection), so they're sized by height with no width cap.
+const PANORAMA_RATIO = 3;
+const PANORAMA_HEIGHT = 2160;
 
 async function collect(input) {
   const info = await stat(input);
@@ -37,9 +41,16 @@ async function main() {
     const out = path.join(OUT_DIR, name);
 
     const before = (await stat(file)).size;
+    const { width = 0, height = 1 } = await sharp(file).metadata();
+    const isPanorama = width / height > PANORAMA_RATIO;
+
     await sharp(file)
       .rotate() // bake in EXIF orientation before metadata is stripped
-      .resize(MAX_WIDTH, MAX_HEIGHT, { fit: "inside", withoutEnlargement: true })
+      .resize(
+        isPanorama ? null : MAX_WIDTH,
+        isPanorama ? PANORAMA_HEIGHT : MAX_HEIGHT,
+        { fit: "inside", withoutEnlargement: true }
+      )
       .withIccProfile("srgb")
       // 4:4:4 keeps fine colour detail (moss, foliage) that 4:2:0 smears
       .jpeg({ quality: QUALITY, mozjpeg: true, chromaSubsampling: "4:4:4" })

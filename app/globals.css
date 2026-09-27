@@ -283,6 +283,51 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Panorama (pinned horizontal pan) ───────────────────── */
+
+.panorama {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+}
+
+.panorama__sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.panorama__track {
+  height: 100%;
+  width: max-content;
+}
+
+.panorama__img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  cursor: zoom-in;
+}
+
+.panorama__caption {
+  position: absolute;
+  left: clamp(1rem, 4vw, 4rem);
+  bottom: 1.6rem;
+  display: flex;
+  gap: 1.6rem;
+  align-items: baseline;
+  color: #ffffff;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.panorama__caption .photo-section__counter {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* ── Footer ─────────────────────────────────────────────── */
 
 .site-footer {

@@ -24,6 +24,7 @@ import DSC07132 from "@/photos/DSC07132.jpg";
 import DSC07168 from "@/photos/DSC07168.jpg";
 import DSC07185 from "@/photos/DSC07185.jpg";
 import DSC07207 from "@/photos/DSC07207.jpg";
+import DSC07313Panorama from "@/photos/DSC07313-Panorama.jpg";
 import L1003012 from "@/photos/L1003012.jpg";
 import L1003502 from "@/photos/L1003502.jpg";
 import L1003566 from "@/photos/L1003566.jpg";
@@ -39,8 +40,17 @@ import L1004258 from "@/photos/L1004258.jpg";
 import L1004895 from "@/photos/L1004895.jpg";
 import L1004966 from "@/photos/L1004966.jpg";
 
-/** Controls each photo's width and horizontal placement in the editorial flow. */
-export type PhotoLayout = "full" | "wide-left" | "wide-right" | "portrait-center" | "portrait-right";
+/**
+ * Controls each photo's width and horizontal placement in the editorial flow.
+ * "panorama" pins full-height and pans sideways (PanoramaSection).
+ */
+export type PhotoLayout =
+  | "full"
+  | "wide-left"
+  | "wide-right"
+  | "portrait-center"
+  | "portrait-right"
+  | "panorama";
 
 export type PhotoItem = {
   id: string;
@@ -206,6 +216,14 @@ export const photos: PhotoItem[] = [
     title: "Rhyolites",
     year: "2025",
     layout: "wide-left"
+  },
+  {
+    id: "dsc07313-panorama",
+    src: DSC07313Panorama,
+    alt: "Panorama of ochre and green rhyolite mountains under a grey sky, Landmannalaugar",
+    title: "Panorama — Landmannalaugar",
+    year: "2025",
+    layout: "panorama"
   },
   {
     id: "dsc06783",

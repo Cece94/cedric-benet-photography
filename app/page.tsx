@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import { Hero } from "@/components/Hero";
 import { Lightbox } from "@/components/Lightbox";
+import { PanoramaSection } from "@/components/PanoramaSection";
 import { PhotoSection } from "@/components/PhotoSection";
 import { ScrollIndicator } from "@/components/ScrollIndicator";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -24,16 +25,19 @@ export default function HomePage() {
       <Hero photo={heroPhoto} />
 
       <main className="gallery">
-        {galleryPhotos.map((photo, i) => (
-          <PhotoSection
-            key={photo.id}
-            photo={photo}
-            index={i}
-            total={galleryPhotos.length}
-            // +1: the lightbox indexes the full photos array, hero included
-            onOpen={i => setLightboxIndex(i + 1)}
-          />
-        ))}
+        {galleryPhotos.map((photo, i) => {
+          const Section = photo.layout === "panorama" ? PanoramaSection : PhotoSection;
+          return (
+            <Section
+              key={photo.id}
+              photo={photo}
+              index={i}
+              total={galleryPhotos.length}
+              // +1: the lightbox indexes the full photos array, hero included
+              onOpen={i => setLightboxIndex(i + 1)}
+            />
+          );
+        })}
       </main>
 
       <footer className="site-footer" id="contact">
