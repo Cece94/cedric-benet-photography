@@ -16,7 +16,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: "Cédric Benet | Photographie",
-  description: "Photographie de paysage et de nature — Norvège, Islande."
+  description: "Photographie — Norvège, Islande."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
