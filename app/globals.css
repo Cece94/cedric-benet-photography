@@ -3,6 +3,11 @@
   --ink: #111111;
   --paper: #fdfdfb;
   --muted: rgba(17, 17, 17, 0.55);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Driven by ExhibitionWall as the gallery lights dim */
+  --wall: #fdfdfb;
+  --wall-ink: #111111;
+  --wall-muted: rgba(17, 17, 17, 0.5);
 }
 
 * {
@@ -75,14 +80,27 @@ html.lenis {
 
 body {
   font-family: var(--font-inter), Arial, sans-serif;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--wall);
+  color: var(--wall-ink);
   -webkit-font-smoothing: antialiased;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+/* Lenis stop() (lightbox open): freeze the page underneath */
+html.lenis.lenis-stopped {
+  overflow: clip;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -97,9 +115,16 @@ a {
   align-items: center;
   justify-content: space-between;
   padding: 1.4rem 2rem;
-  color: var(--ink);
+  color: var(--wall-ink);
   pointer-events: none;
   transition: color 0.4s ease;
+}
+
+/* Off the hero, a fade in the wall colour keeps the name clear of
+   whatever scrolls beneath it */
+.site-header:not(.site-header--light) {
+  padding-bottom: 3rem;
+  background: linear-gradient(to bottom, var(--wall) 50%, transparent);
 }
 
 /* Over the hero image: white text, soft shadow for mid-tone areas */
@@ -108,7 +133,6 @@ a {
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
-.site-header a,
 .site-header p {
   pointer-events: auto;
 }
@@ -119,24 +143,6 @@ a {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.28em;
-}
-
-.site-header__nav {
-  display: flex;
-  gap: 1.8rem;
-}
-
-.site-header__nav a {
-  font-size: 0.62rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  opacity: 0.85;
-  transition: opacity 0.3s ease;
-}
-
-.site-header__nav a:hover {
-  opacity: 0.45;
 }
 
 /* ── Hero ───────────────────────────────────────────────── */
@@ -219,152 +225,373 @@ a {
   100% { background-position: 0 100%; }
 }
 
-/* ── Gallery sections ───────────────────────────────────── */
+/* ── Exhibition wall ────────────────────────────────────── */
 
-.gallery {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8rem, 18vh, 16rem);
-  padding: 6rem 0 10rem;
-}
-
-.photo-section {
-  display: flex;
-  flex-direction: column;
-  padding: 0 clamp(1rem, 4vw, 4rem);
-}
-
-.photo-section__figure {
-  margin: 0;
-  overflow: hidden;
-  cursor: zoom-in;
-}
-
-/* Slightly oversized so the parallax drift never reveals edges */
-.photo-section__parallax {
-  scale: 1.08;
-}
-
-.photo-section__img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* Layout variants: width + alignment rhythm down the page */
-.photo-section--full .photo-section__figure            { width: 100%; }
-.photo-section--wide-left .photo-section__figure       { width: min(78%, 1400px); align-self: flex-start; }
-.photo-section--wide-right .photo-section__figure      { width: min(78%, 1400px); align-self: flex-end; }
-.photo-section--portrait-center .photo-section__figure { width: min(52%, 760px); align-self: center; }
-.photo-section--portrait-right .photo-section__figure  { width: min(44%, 640px); align-self: flex-end; margin-right: clamp(0rem, 6vw, 6rem); }
-
-.photo-section--wide-left .photo-section__caption,
-.photo-section--portrait-center .photo-section__caption { align-self: flex-start; }
-
-.photo-section__caption {
-  display: flex;
-  gap: 1.6rem;
-  align-items: baseline;
-  margin-top: 1rem;
-  padding: 0 0.1rem;
-}
-
-.photo-section__title {
-  font-size: 0.62rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-}
-
-.photo-section__counter {
-  font-size: 0.58rem;
-  letter-spacing: 0.2em;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── Panorama (pinned horizontal pan) ───────────────────── */
-
-.panorama {
+.wall {
   position: relative;
   height: 100vh;
   height: 100svh;
 }
 
-.panorama__sticky {
+.wall__sticky {
   position: sticky;
   top: 0;
   height: 100vh;
   height: 100svh;
   overflow: hidden;
+  color: var(--wall-ink);
 }
 
-.panorama__track {
-  height: 100%;
-  width: max-content;
-}
-
-.panorama__img {
-  display: block;
-  height: 100%;
-  width: auto;
-  max-width: none;
-  cursor: zoom-in;
-}
-
-.panorama__caption {
-  position: absolute;
-  left: clamp(1rem, 4vw, 4rem);
-  bottom: 1.6rem;
+/* Everything hangs on one centre line, set a little above the middle to
+   leave room for the cartels underneath. */
+.wall__track {
+  position: relative;
   display: flex;
-  gap: 1.6rem;
-  align-items: baseline;
-  color: #ffffff;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
+  align-items: center;
+  width: max-content;
+  height: 100%;
+  padding-bottom: 7svh;
+  will-change: transform;
 }
 
-.panorama__caption .photo-section__counter {
-  color: rgba(255, 255, 255, 0.75);
+/* Opening: portrait and a few words, then straight into the first series */
+.wall__about {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  padding-left: clamp(1.5rem, 6vw, 7rem);
 }
 
-/* ── Footer ─────────────────────────────────────────────── */
+.intro-portrait {
+  position: relative;
+  flex: none;
+  height: 58svh;
+  aspect-ratio: 1.7;
+  margin: 0;
+}
 
-.site-footer {
+.intro-portrait__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Cropped around the walker, who stands just left of centre */
+.intro-portrait__img {
+  object-fit: cover;
+  object-position: 48% 50%;
+}
+
+.intro-portrait .work__label {
+  opacity: 1;
+  transform: none;
+}
+
+.wall__bio {
+  flex: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.4rem;
-  padding: 12rem 1.5rem 4rem;
-  text-align: center;
+  gap: 1.3rem;
+  width: 20rem;
 }
 
-.site-footer__title {
+.wall__bio-text {
   margin: 0;
   font-family: var(--font-cormorant), Georgia, serif;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  font-weight: 300;
+  font-size: 1.38rem;
+  font-weight: 400;
+  line-height: 1.45;
 }
 
-.site-footer__mail {
-  font-size: 0.72rem;
+.wall__bio .wall__hint {
+  margin-top: 1.4rem;
+}
+
+.wall__eyebrow,
+.wall-text__meta {
+  margin: 0;
+  font-size: 0.6rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: var(--wall-muted);
+}
+
+.wall-text__title {
+  margin: 0;
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-weight: 300;
+  line-height: 0.92;
+  letter-spacing: -0.015em;
+}
+
+.wall__hint {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2.4rem 0 0;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.34em;
+  color: var(--wall-muted);
+}
+
+.wall__hint-line {
+  width: 5rem;
+  height: 1px;
+  background-image: linear-gradient(
+    to right,
+    transparent 0 30%,
+    var(--wall-ink) 30% 60%,
+    transparent 60% 100%
+  );
+  background-size: 220% 100%;
+  animation: walk 2s ease-in-out infinite;
+}
+
+@keyframes walk {
+  0%   { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+
+/* Series wall text */
+.wall-text {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+  margin: 0 clamp(4rem, 16vh, 12rem) 0 clamp(6rem, 22vh, 16rem);
+  opacity: 0;
+  transform: translateX(3rem);
+  transition: opacity 1.4s ease, transform 1.8s var(--ease-out);
+}
+
+.wall-text.is-hung {
+  opacity: 1;
+  transform: none;
+}
+
+.wall-text__title {
+  font-size: clamp(3rem, min(11vh, 10vw), 7.5rem);
+  white-space: nowrap;
+}
+
+/* ── Works ──────────────────────────────────────────────── */
+
+.work {
+  --h: 0.54;
+  position: relative;
+  flex: none;
+  /* Hung by height, but never wider than the screen */
+  height: min(calc(var(--h) * 100svh), calc(84vw / var(--ar)));
+  aspect-ratio: var(--ar);
+  margin: 0 clamp(5rem, 24vh, 16rem) 0 0;
+}
+
+.work--s { --h: 0.4; }
+.work--m { --h: 0.54; }
+.work--l { --h: 0.68; }
+
+/* A pair: the next work hangs close by */
+/* Panoramas keep their full height: the visitor walks past their length */
+.work--panorama {
+  height: calc(var(--h) * 100svh);
+}
+
+.work--tight {
+  margin-right: clamp(1.4rem, 5vh, 3.2rem);
+}
+
+/* Soft shadow, as if the print stood a few millimetres off the wall.
+   On its own layer because the frame's clip-path would cut it. */
+.work__box {
+  position: absolute;
+  inset: 0;
+}
+
+.work__box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 28px 50px -30px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 1.6s ease 0.5s;
+}
+
+.work.is-hung .work__box::before {
+  opacity: 1;
+}
+
+.work__frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  cursor: zoom-in;
+  /* Unveiled left to right, in the walking direction */
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1.6s var(--ease-out);
+}
+
+.work.is-hung .work__frame {
+  clip-path: inset(0 0 0 0);
+}
+
+/* Overscanned sideways so the parallax drift never shows an edge */
+.work__inner {
+  position: absolute;
+  inset: 0 -5%;
+}
+
+.work--panorama .work__inner {
+  inset: 0;
+}
+
+.work__img {
+  object-fit: cover;
+  scale: 1.14;
+  transition: scale 2.2s var(--ease-out);
+}
+
+.work.is-hung .work__img {
+  scale: 1;
+}
+
+.work.is-hung .work__frame:hover .work__img {
+  scale: 1.035;
+}
+
+/* Museum cartel */
+.work__label {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  margin-top: 1.1rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 1s ease 0.7s, transform 1.2s var(--ease-out) 0.7s;
+}
+
+.work.is-hung .work__label {
+  opacity: 1;
+  transform: none;
+}
+
+.work__num,
+.work__year {
+  font-size: 0.56rem;
+  letter-spacing: 0.22em;
+  color: var(--wall-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.work__title {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 1.12rem;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ── End of the show ────────────────────────────────────── */
+
+.wall-end {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  width: max(58vw, 20rem);
+  padding: 0 clamp(1.5rem, 8vw, 9rem) 0 clamp(2rem, 14vh, 10rem);
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+.wall-end.is-hung {
+  opacity: 1;
+}
+
+.wall-end__mail {
+  align-self: flex-start;
+  padding-bottom: 0.3rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.26em;
-  border-bottom: 1px solid rgba(17, 17, 17, 0.25);
-  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--wall-muted);
   transition: border-color 0.3s ease;
 }
 
-.site-footer__mail:hover {
-  border-color: var(--ink);
+.wall-end__mail:hover {
+  border-color: var(--wall-ink);
 }
 
-.site-footer__copy {
-  margin: 3rem 0 0;
+.wall-end__links {
+  display: flex;
+  gap: 2rem;
+  margin: 1.4rem 0 0;
   font-size: 0.56rem;
-  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: 0.22em;
+  color: var(--wall-muted);
+}
+
+.wall-end__links a:hover {
+  color: var(--wall-ink);
+}
+
+/* Walk progress: one hairline along the floor */
+.wall__progress {
+  position: absolute;
+  left: clamp(1.5rem, 8vw, 9rem);
+  right: clamp(1.5rem, 8vw, 9rem);
+  bottom: 2.2rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--wall-ink) 14%, transparent);
+}
+
+/* Series shortcuts: small titles standing on the progress line */
+.wall__marker {
+  position: absolute;
+  bottom: 1.1rem;
+  /* Centred on its tick; the left padding balances the trailing
+     letter-spacing so the word itself sits dead centre */
+  padding-left: 0.24em;
+  transform: translateX(-50%);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  white-space: nowrap;
+  color: var(--wall-muted);
+  cursor: pointer;
+  transition: color 0.4s ease;
+}
+
+/* Tick down to the line */
+.wall__marker::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 1.1rem;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.wall__marker:hover,
+.wall__marker.is-active {
+  color: var(--wall-ink);
+}
+
+.wall__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--wall-ink);
+  transform: scaleX(0);
+  transform-origin: left center;
 }
 
 /* ── Lightbox ───────────────────────────────────────────── */
@@ -453,6 +680,157 @@ a {
 .lightbox__nav--prev { left: 1rem; }
 .lightbox__nav--next { right: 1rem; }
 
+/* ── Vertical wall (phones, portrait tablets) ───────────── */
+
+.vwall {
+  --g: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 10svh;
+  color: var(--wall-ink);
+}
+
+.vwall .wall__about {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 12svh 0 0;
+}
+
+/* Portrait full-bleed, cropped around the walker */
+.vwall .intro-portrait {
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+.vwall .intro-portrait__frame {
+  position: relative;
+  aspect-ratio: 1.25;
+}
+
+.vwall .intro-portrait .work__label {
+  position: static;
+  margin-top: 0.9rem;
+  padding: 0 var(--g);
+}
+
+.vwall .wall__bio {
+  width: auto;
+  padding: 3.4rem var(--g) 0;
+}
+
+/* The hero already invites scrolling on phones */
+.vwall .wall__hint {
+  display: none;
+}
+
+.vwall .wall-text {
+  margin: 20svh 0 14svh;
+  padding: 0 var(--g);
+  transform: translateY(2rem);
+}
+
+.vwall .wall-text.is-hung {
+  transform: none;
+}
+
+.vwall .wall-text__title {
+  font-size: clamp(3rem, 15vw, 5.5rem);
+}
+
+/* Each work on its own row: full-bleed, or hung left/right */
+.vwall__hang {
+  display: flex;
+  margin-bottom: 16svh;
+}
+
+.vwall__hang--left  { justify-content: flex-start; padding-left: var(--g); }
+.vwall__hang--right { justify-content: flex-end; padding-right: var(--g); }
+
+/* A pair: the next work hangs just below */
+.vwall__hang:has(.work--tight) {
+  margin-bottom: 5svh;
+}
+
+.vwall .work {
+  height: auto;
+  aspect-ratio: auto;
+  margin: 0;
+  /* Share of the screen width, but never taller than the screen */
+  width: min(calc(var(--w) * 1vw), calc(78svh * var(--ar)));
+}
+
+.vwall__hang--full .work {
+  width: 100%;
+}
+
+.vwall .work__box {
+  position: relative;
+  aspect-ratio: var(--ar);
+}
+
+/* Unveiled top to bottom, in the walking direction */
+.vwall .work__frame {
+  clip-path: inset(0 0 100% 0);
+}
+
+.vwall .work.is-hung .work__frame {
+  clip-path: inset(0 0 0 0);
+}
+
+/* Overscanned vertically for the parallax drift */
+.vwall .work__inner {
+  inset: -5% 0;
+}
+
+.vwall .work__label {
+  position: static;
+  margin-top: 0.9rem;
+}
+
+.vwall__hang--full .work__label {
+  padding: 0 var(--g);
+}
+
+/* Panorama: pinned, full height, panned sideways by the scroll */
+.vpano {
+  position: relative;
+  height: 100svh;
+  margin: 6svh 0 16svh;
+}
+
+.vpano__sticky {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.vpano__track {
+  width: max-content;
+}
+
+.vpano .work {
+  width: auto;
+  height: 62svh;
+  aspect-ratio: var(--ar);
+  margin: 0;
+}
+
+.vpano .work__label {
+  padding-left: var(--g);
+}
+
+.vwall .wall-end {
+  width: auto;
+  min-height: 80svh;
+  justify-content: center;
+  padding: 0 var(--g);
+}
+
 /* ── Responsive ─────────────────────────────────────────── */
 
 @media (max-width: 900px) {
@@ -460,25 +838,8 @@ a {
     padding: 1.1rem 1.2rem;
   }
 
-  .gallery {
-    gap: clamp(5rem, 12vh, 8rem);
-    padding: 3rem 0 6rem;
-  }
-
-  .photo-section {
-    padding: 0 1rem;
-  }
-
-  /* Single-column rhythm on mobile: everything near full width */
-  .photo-section--wide-left .photo-section__figure,
-  .photo-section--wide-right .photo-section__figure {
-    width: 100%;
-  }
-
-  .photo-section--portrait-center .photo-section__figure,
-  .photo-section--portrait-right .photo-section__figure {
-    width: 84%;
-    margin-right: 0;
+  .work__title {
+    font-size: 1rem;
   }
 
   .lightbox__nav { display: none; }

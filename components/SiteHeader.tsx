@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** Fixed header: white over the fullscreen hero, ink once on the light background. */
+/** Fixed signature: white over the fullscreen hero, then the wall's ink colour. */
 export function SiteHeader() {
   const [overHero, setOverHero] = useState(true);
 
@@ -19,10 +19,6 @@ export function SiteHeader() {
   return (
     <header className={`site-header${overHero ? " site-header--light" : ""}`}>
       <p className="site-header__name">Cédric Benet</p>
-      <nav className="site-header__nav" aria-label="Main menu">
-        <a href="https://www.instagram.com" target="_blank" rel="noreferrer">Instagram</a>
-        <a href="#contact">Contact</a>
-      </nav>
     </header>
   );
 }

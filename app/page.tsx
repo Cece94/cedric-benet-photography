@@ -1,18 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 
+import { ExhibitionWall } from "@/components/ExhibitionWall";
 import { Hero } from "@/components/Hero";
 import { Lightbox } from "@/components/Lightbox";
-import { PanoramaSection } from "@/components/PanoramaSection";
-import { PhotoSection } from "@/components/PhotoSection";
 import { ScrollIndicator } from "@/components/ScrollIndicator";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { photos } from "@/lib/gallery";
-
-const [heroPhoto, ...galleryPhotos] = photos;
+import { hero } from "@/lib/gallery";
 
 export default function HomePage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -22,39 +18,11 @@ export default function HomePage() {
       <SiteHeader />
       <ScrollIndicator />
 
-      <Hero photo={heroPhoto} />
+      <Hero photo={hero} />
 
-      <main className="gallery">
-        {galleryPhotos.map((photo, i) => {
-          const Section = photo.layout === "panorama" ? PanoramaSection : PhotoSection;
-          return (
-            <Section
-              key={photo.id}
-              photo={photo}
-              index={i}
-              total={galleryPhotos.length}
-              // +1: the lightbox indexes the full photos array, hero included
-              onOpen={i => setLightboxIndex(i + 1)}
-            />
-          );
-        })}
+      <main>
+        <ExhibitionWall onOpen={setLightboxIndex} paused={lightboxIndex !== null} />
       </main>
-
-      <footer className="site-footer" id="contact">
-        <motion.p
-          className="site-footer__title"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-        >
-          Contact
-        </motion.p>
-        <a className="site-footer__mail" href="mailto:hello@cedricbenet.com">
-          hello@cedricbenet.com
-        </a>
-        <p className="site-footer__copy">© {new Date().getFullYear()} Cédric Benet</p>
-      </footer>
 
       <Lightbox
         index={lightboxIndex}

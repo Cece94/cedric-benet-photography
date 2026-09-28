@@ -4,6 +4,7 @@ import { useCallback, useEffect } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useLenis } from "@/components/SmoothScroll";
 import { photos } from "@/lib/gallery";
 
 type Props = {
@@ -14,6 +15,16 @@ type Props = {
 
 /** Fullscreen viewer: fade-in backdrop, arrow-key navigation, Escape to close. */
 export function Lightbox({ index, onClose, onNavigate }: Props) {
+  const lenis = useLenis();
+  const open = index !== null;
+
+  // Freeze the wall behind the viewer.
+  useEffect(() => {
+    if (!lenis || !open) return;
+    lenis.stop();
+    return () => lenis.start();
+  }, [lenis, open]);
+
   const step = useCallback(
     (dir: 1 | -1) => {
       if (index === null) return;

@@ -4,13 +4,13 @@ import { useRef } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 
-import type { PhotoItem } from "@/lib/gallery";
+import type { Photo } from "@/lib/gallery";
 
 /**
  * Fullscreen opening image: slow zoom-out on load, then the photo
  * gently recedes and dims as the user starts scrolling.
  */
-export function Hero({ photo }: { photo: PhotoItem }) {
+export function Hero({ photo }: { photo: Photo }) {
   const ref = useRef<HTMLElement>(null);
 
   const { scrollYProgress } = useScroll({
