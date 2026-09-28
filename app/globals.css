@@ -594,6 +594,134 @@ html.lenis.lenis-stopped {
   transform-origin: left center;
 }
 
+/* Back home: a little house where the line starts */
+.wall__home {
+  position: absolute;
+  right: calc(100% + 0.5rem);
+  bottom: 0;
+  width: 0.95rem;
+  height: 0.9rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--wall-muted);
+  cursor: pointer;
+  transition: color 0.4s ease, transform 0.3s var(--ease-out);
+}
+
+.wall__home:hover,
+.wall__home:focus-visible {
+  color: var(--wall-ink);
+  transform: translateY(-2px);
+}
+
+.wall__home svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The hiker walking the line; short enough to pass under the series titles */
+.wall__hiker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  height: 17.5px;
+  margin-left: -7px;
+  color: var(--wall-ink);
+  pointer-events: none;
+  transition: color 0.4s ease;
+}
+
+.wall__hiker svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.25s ease;
+}
+
+.wall__hiker.is-back svg {
+  transform: scaleX(-1);
+}
+
+.hiker__head,
+.hiker__pack {
+  fill: currentColor;
+}
+
+.hiker__pack {
+  stroke-width: 1.4;
+}
+
+.hiker__pole {
+  stroke-width: 1.2;
+}
+
+.hiker__leg,
+.hiker__arm {
+  transform-box: view-box;
+}
+
+.hiker__leg {
+  transform-origin: 11.5px 19px;
+}
+
+.hiker__arm {
+  transform-origin: 12.4px 11px;
+}
+
+.is-walking .hiker__leg--front {
+  animation: hiker-step 0.44s ease-in-out infinite alternate;
+}
+
+.is-walking .hiker__leg--back {
+  animation: hiker-step 0.44s ease-in-out infinite alternate-reverse;
+}
+
+.is-walking .hiker__arm {
+  animation: hiker-swing 0.44s ease-in-out infinite alternate-reverse;
+}
+
+.is-walking .hiker__body {
+  animation: hiker-bob 0.44s ease-in-out infinite;
+}
+
+@keyframes hiker-step {
+  from { transform: rotate(-24deg); }
+  to { transform: rotate(24deg); }
+}
+
+@keyframes hiker-swing {
+  from { transform: rotate(-16deg); }
+  to { transform: rotate(16deg); }
+}
+
+@keyframes hiker-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.9px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-walking .hiker__leg,
+  .is-walking .hiker__arm,
+  .is-walking .hiker__body {
+    animation: none;
+  }
+}
+
 /* ── Lightbox ───────────────────────────────────────────── */
 
 .lightbox {

@@ -159,3 +159,33 @@ export function WallEnd({ itemRef }: { itemRef: Ref<HTMLDivElement> }) {
     </div>
   );
 }
+
+/** Little house at the start of the walk: the way back home. */
+export function HomeIcon() {
+  return (
+    <svg viewBox="2.5 3 19 17.5" aria-hidden="true">
+      <path d="M3.5 11.5 12 4l8.5 7.5" />
+      <path d="M6 10v9.5h12V10" />
+      <path d="M10.2 19.5v-5h3.6v5" />
+    </svg>
+  );
+}
+
+/** A hiker with a backpack and a trekking pole, feet on the bottom edge. */
+export function Hiker() {
+  return (
+    <svg viewBox="0 0 24 30" aria-hidden="true">
+      <g className="hiker__body">
+        <path className="hiker__leg hiker__leg--back" d="M11.5 19 11 28.5l2 .3" />
+        <rect className="hiker__pack" x="5.2" y="9.2" width="5.6" height="9.6" rx="1.8" />
+        <path d="M12.5 10 11.5 19" />
+        <circle className="hiker__head" cx="13.6" cy="5.6" r="2.6" />
+        <path className="hiker__leg hiker__leg--front" d="M11.5 19 11 28.5l2 .3" />
+        <g className="hiker__arm">
+          <path d="M12.4 11 14.4 16.2" />
+          <path className="hiker__pole" d="M14.6 13.6 16.4 29.5" />
+        </g>
+      </g>
+    </svg>
+  );
+}

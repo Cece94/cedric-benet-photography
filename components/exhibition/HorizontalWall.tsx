@@ -3,9 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 
-import { WallEnd, WallIntro, WallText, WorkFigure, clamp01, isPanorama, setLights, workNumbers } from "./parts";
+import {
+  Hiker,
+  HomeIcon,
+  WallEnd,
+  WallIntro,
+  WallText,
+  WorkFigure,
+  clamp01,
+  isPanorama,
+  setLights,
+  workNumbers
+} from "./parts";
 import { useLenis } from "@/components/SmoothScroll";
 import { LIGHTS_OUT_ID, aspect, wall, type WorkSize } from "@/lib/gallery";
+
+/** How long the hiker keeps walking after the wall stops moving (ms). */
+const HIKER_STOP = 120;
+/** Wall movement per frame (px) below which the hiker rests: ignores the smooth-scroll glide's long tail. */
+const HIKER_MIN_STEP = 1.5;
 
 /** Hanging height of each size, as a share of the viewport height. */
 const HEIGHT: Record<WorkSize, number> = { s: 0.4, m: 0.54, l: 0.68 };
@@ -22,6 +38,9 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const innerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const progressRef = useRef<HTMLSpanElement>(null);
+  // The hiker walking along the progress line, and when to let them rest.
+  const hikerRef = useRef<HTMLSpanElement>(null);
+  const hikerStep = useRef({ last: -1, timer: undefined as ReturnType<typeof setTimeout> | undefined });
   // Item positions along the track, measured on mount and resize.
   const layout = useRef({ lefts: [] as number[], widths: [] as number[], lightsOut: Infinity });
   // Series shortcuts along the progress line: position (0–1) and scroll distance.
@@ -58,6 +77,20 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
     const d = distance.get();
     const progress = d ? -xv / d : 0;
     if (progressRef.current) progressRef.current.style.transform = `scaleX(${progress})`;
+
+    const hiker = hikerRef.current;
+    const step = hikerStep.current;
+    if (hiker) {
+      hiker.style.left = `${progress * 100}%`;
+      // Walk while the wall moves, turning round when heading back.
+      if (step.last >= 0 && Math.abs(progress - step.last) * d > HIKER_MIN_STEP) {
+        hiker.classList.add("is-walking");
+        hiker.classList.toggle("is-back", progress < step.last);
+        clearTimeout(step.timer);
+        step.timer = setTimeout(() => hiker.classList.remove("is-walking"), HIKER_STOP);
+      }
+      step.last = progress;
+    }
 
     // The series being walked through is the last one whose start is behind us.
     const current = markers.reduce((found, m, i) => (m.at <= progress + 0.002 ? i : found), -1);
@@ -169,7 +202,18 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
         </motion.div>
 
         <nav className="wall__progress" aria-label="Séries">
+          <button
+            type="button"
+            className="wall__home"
+            aria-label="Retour à l'accueil"
+            onClick={() => (lenis ? lenis.scrollTo(0, { duration: 2.4 }) : window.scrollTo({ top: 0, behavior: "smooth" }))}
+          >
+            <HomeIcon />
+          </button>
           <span ref={progressRef} className="wall__progress-fill" />
+          <span ref={hikerRef} className="wall__hiker">
+            <Hiker />
+          </span>
           {markers.map((m, i) => (
             <button
               key={m.title}
