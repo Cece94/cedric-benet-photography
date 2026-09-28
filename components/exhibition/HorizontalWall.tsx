@@ -213,6 +213,7 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
           <span ref={progressRef} className="wall__progress-fill" />
           <span ref={hikerRef} className="wall__hiker">
             <Hiker />
+            <span className="wall__hiker-bubble">Hi !</span>
           </span>
           {markers.map((m, i) => (
             <button

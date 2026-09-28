@@ -171,7 +171,10 @@ export function HomeIcon() {
   );
 }
 
-/** A hiker with a backpack and a trekking pole, feet on the bottom edge. */
+/**
+ * A hiker with a backpack and a trekking pole, feet on the bottom edge.
+ * The raised arm only shows when they wave hello (on hover).
+ */
 export function Hiker() {
   return (
     <svg viewBox="0 0 24 30" aria-hidden="true">
@@ -181,6 +184,14 @@ export function Hiker() {
         <path d="M12.5 10 11.5 19" />
         <circle className="hiker__head" cx="13.6" cy="5.6" r="2.6" />
         <path className="hiker__leg hiker__leg--front" d="M11.5 19 11 28.5l2 .3" />
+        {/* raised well clear of the head so the waving hand shows */}
+        <g className="hiker__wave">
+          <path d="M12.6 10.6 17.4 8.6" />
+          <g className="hiker__forearm">
+            <path d="M17.4 8.6 19 2.4" />
+            <circle className="hiker__hand" cx="19.1" cy="2" r="0.9" />
+          </g>
+        </g>
         <g className="hiker__arm">
           <path d="M12.4 11 14.4 16.2" />
           <path className="hiker__pole" d="M14.6 13.6 16.4 29.5" />

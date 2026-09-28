@@ -635,8 +635,9 @@ html.lenis.lenis-stopped {
   width: 14px;
   height: 17.5px;
   margin-left: -7px;
+  z-index: 1;
   color: var(--wall-ink);
-  pointer-events: none;
+  cursor: default;
   transition: color 0.4s ease;
 }
 
@@ -712,6 +713,84 @@ html.lenis.lenis-stopped {
 @keyframes hiker-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-0.9px); }
+}
+
+/* Hover the hiker and they wave hello. A slightly larger hover target
+   than the tiny figure: */
+.wall__hiker::before {
+  content: "";
+  position: absolute;
+  inset: -6px -5px -4px;
+}
+
+.hiker__wave {
+  opacity: 0;
+}
+
+.wall__hiker:hover .hiker__wave {
+  opacity: 1;
+}
+
+.hiker__hand {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* The forearm swings from the elbow */
+.hiker__forearm {
+  transform-box: view-box;
+  transform-origin: 17.4px 8.6px;
+}
+
+.wall__hiker:hover .hiker__forearm {
+  animation: hiker-wave 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes hiker-wave {
+  from { transform: rotate(-22deg); }
+  to { transform: rotate(22deg); }
+}
+
+.wall__hiker-bubble {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  padding: 0.3rem 0.5rem 0.28rem;
+  border-radius: 0.6rem;
+  background: var(--wall-ink);
+  color: var(--wall);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-30%, 4px) scale(0.6);
+  transform-origin: 30% 100%;
+  transition: opacity 0.2s ease, transform 0.3s var(--ease-out);
+  pointer-events: none;
+}
+
+/* Tail pointing down at the hiker's head */
+.wall__hiker-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 30%;
+  border: 4px solid transparent;
+  border-top-color: var(--wall-ink);
+  border-bottom: 0;
+  transform: translateX(-50%);
+}
+
+.wall__hiker:hover .wall__hiker-bubble {
+  opacity: 1;
+  transform: translate(-30%, 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall__hiker:hover .hiker__forearm {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
