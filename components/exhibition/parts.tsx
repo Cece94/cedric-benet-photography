@@ -160,13 +160,17 @@ export function WallEnd({ itemRef }: { itemRef: Ref<HTMLDivElement> }) {
   );
 }
 
-/** Little house at the start of the walk: the way back home. */
+/** Little mountain hut at the start of the walk: the way back home. Smoke rises on hover. */
 export function HomeIcon() {
   return (
-    <svg viewBox="2.5 3 19 17.5" aria-hidden="true">
-      <path d="M3.5 11.5 12 4l8.5 7.5" />
-      <path d="M6 10v9.5h12V10" />
-      <path d="M10.2 19.5v-5h3.6v5" />
+    <svg viewBox="1 3.2 22 17.6" aria-hidden="true">
+      <path className="home__smoke" d="M17.5 2.6c-.8-.6.3-1.2-.3-1.9" />
+      <path className="home__smoke home__smoke--late" d="M17.5 2.6c-.8-.6.3-1.2-.3-1.9" />
+      <path d="M16.4 7.3V4h2.2v5.1" />
+      <path d="M2 12.2 12 4l10 8.2" />
+      <path d="M4.6 10.3V20h14.8v-9.7" />
+      <path d="M10.2 20v-3.9a1.8 1.8 0 0 1 3.6 0V20" />
+      <circle cx="12" cy="10.6" r="1.2" />
     </svg>
   );
 }

@@ -599,8 +599,8 @@ html.lenis.lenis-stopped {
   position: absolute;
   right: calc(100% + 0.5rem);
   bottom: 0;
-  width: 0.95rem;
-  height: 0.9rem;
+  width: 1.1rem;
+  height: 0.88rem;
   padding: 0;
   border: 0;
   background: none;
@@ -625,6 +625,33 @@ html.lenis.lenis-stopped {
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* Wisps of smoke from the chimney while hovered */
+.home__smoke {
+  stroke-width: 1.2;
+  opacity: 0;
+}
+
+.wall__home:hover .home__smoke {
+  animation: home-smoke 1.6s ease-out infinite;
+}
+
+.wall__home:hover .home__smoke--late {
+  animation-delay: 0.8s;
+}
+
+@keyframes home-smoke {
+  0% { opacity: 0; transform: translateY(1.5px); }
+  30% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall__home:hover .home__smoke {
+    animation: none;
+    opacity: 0.7;
+  }
 }
 
 /* The hiker walking the line; short enough to pass under the series titles */
