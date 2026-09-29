@@ -66,7 +66,6 @@ export function WallIntro() {
         </motion.div>
         <figcaption className="work__label">
           <span className="work__title">{portrait.title}</span>
-          <span className="work__year">{portrait.year}</span>
         </figcaption>
       </motion.figure>
 
@@ -137,7 +136,6 @@ export function WorkFigure({ item, n, onOpen, sizes, className = "", itemRef, in
       <figcaption className="work__label">
         <span className="work__num">{String(n + 1).padStart(2, "0")}</span>
         <span className="work__title">{photo.title}</span>
-        <span className="work__year">{photo.year}</span>
       </figcaption>
     </figure>
   );

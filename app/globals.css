@@ -474,8 +474,7 @@ html.lenis.lenis-stopped {
   transform: none;
 }
 
-.work__num,
-.work__year {
+.work__num {
   font-size: 0.56rem;
   letter-spacing: 0.22em;
   color: var(--wall-muted);

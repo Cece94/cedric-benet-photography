@@ -76,9 +76,7 @@ export function Lightbox({ index, onClose, onNavigate }: Props) {
             />
           </motion.div>
 
-          <p className="lightbox__caption">
-            {photo.title} — {photo.year}
-          </p>
+          <p className="lightbox__caption">{photo.title}</p>
 
           <button className="lightbox__close" onClick={onClose} aria-label="Fermer" />
           <button
