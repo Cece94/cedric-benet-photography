@@ -566,7 +566,7 @@ html.lenis.lenis-stopped {
 .wall__marker {
   position: absolute;
   bottom: 1.5rem;
-  /* Centred on its tick; the left padding balances the trailing
+  /* Centred on its landmark; the left padding balances the trailing
      letter-spacing so the word itself sits dead centre */
   padding-left: 0.24em;
   transform: translateX(-50%);
@@ -579,8 +579,47 @@ html.lenis.lenis-stopped {
   transition: color 0.4s ease;
 }
 
-/* Tick down to the line */
-.wall__marker::before {
+/* Series with a landmark stand taller: title above the skyline */
+.wall__marker:has(.wall__landmark) {
+  bottom: 2.1rem;
+}
+
+/* The series' skyline, rising out of the line and back into it */
+.wall__landmark {
+  position: absolute;
+  display: block;
+  left: 50%;
+  top: calc(100% + 0.4rem);
+  width: 5.7rem;
+  height: 1.7rem;
+  transform: translateX(-50%);
+}
+
+.wall__landmark svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wall__landmark-base {
+  fill: currentColor;
+  opacity: 0.45;
+  transition: opacity 0.4s ease;
+}
+
+.wall__marker:hover .wall__landmark-base {
+  opacity: 0.8;
+}
+
+/* Ink poured in from the left as the hiker walks across (--fill: 0–1) */
+.wall__landmark-ink {
+  fill: var(--wall-ink);
+  clip-path: inset(0 calc((1 - var(--fill, 0)) * 100%) 0 0);
+}
+
+/* Tick down to the line (series without a landmark) */
+.wall__marker:not(:has(.wall__landmark))::before {
   content: "";
   position: absolute;
   left: 50%;

@@ -6,6 +6,7 @@ import { motion, useMotionValue, useMotionValueEvent, useScroll, useTransform } 
 import {
   Hiker,
   HomeIcon,
+  Landmark,
   WallEnd,
   WallIntro,
   WallText,
@@ -46,6 +47,7 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
   // Series shortcuts along the progress line: position (0–1) and scroll distance.
   const [markers, setMarkers] = useState<{ title: string; at: number; walk: number }[]>([]);
   const markerRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const landmarkRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const lenis = useLenis();
 
   // How far the track overflows the viewport, i.e. how far the walk goes.
@@ -56,6 +58,9 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
   // Per-frame effects written straight to the DOM (no re-renders).
   const apply = (xv: number) => {
     const vw = window.innerWidth;
+    // Read before any writes below, so this doesn't force a layout.
+    const lineWidth = progressRef.current?.parentElement?.clientWidth ?? 0;
+    const landmarkWidth = landmarkRefs.current.find(Boolean)?.offsetWidth ?? 0;
     const { lefts, widths, lightsOut } = layout.current;
 
     itemRefs.current.forEach((el, i) => {
@@ -95,6 +100,14 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
     // The series being walked through is the last one whose start is behind us.
     const current = markers.reduce((found, m, i) => (m.at <= progress + 0.002 ? i : found), -1);
     markerRefs.current.forEach((el, i) => el?.classList.toggle("is-active", i === current));
+
+    // Each landmark fills with ink as the hiker walks across it.
+    landmarkRefs.current.forEach((el, i) => {
+      const m = markers[i];
+      if (!el || !m || !landmarkWidth) return;
+      const fill = clamp01(((progress - m.at) * lineWidth) / landmarkWidth + 0.5);
+      el.style.setProperty("--fill", fill.toFixed(4));
+    });
   };
 
   useMotionValueEvent(x, "change", apply);
@@ -231,6 +244,12 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
               }}
             >
               {m.title}
+              <Landmark
+                title={m.title}
+                ref={el => {
+                  landmarkRefs.current[i] = el;
+                }}
+              />
             </button>
           ))}
         </nav>

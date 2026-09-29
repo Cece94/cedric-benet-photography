@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, Ref } from "react";
+import type { CSSProperties, ReactNode, Ref } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -202,5 +202,55 @@ export function Hiker() {
         </g>
       </g>
     </svg>
+  );
+}
+
+/**
+ * Skyline of each series, rising out of the progress line and falling back
+ * into it (base on y = 24). Keyed by the series' wall-text title.
+ */
+const LANDMARKS: Record<string, ReactNode> = {
+  // Lofoten: sheer walls plunging into a fjord, a rorbu at the water, a sea eagle
+  Norvège: (
+    <>
+      <path d="M0 24 4 23.2 7.5 19 10.5 9 12.6 11 16 2.6 18.6 7.8 20.4 6 23.4 13.5 25.6 20.5 27.4 24H31.6V21.4L33.8 19.6 36 21.4V24H40.6L42.4 19.5 44.6 8.4 46.6 10.4 49.6 3.8 51.6 7 53.8 5.2 57 12 61 18.4 67 22 74 23.4 80 24Z" />
+      <path d="M58 6.2 61 4.8 63.2 5 64.3 5.8 65 5.2 65.7 5.8 66.8 5 69 4.8 72 6.2 69.4 6.1 67 6.6 65.8 7.3 65.6 8.6 65 9.1 64.4 8.6 64.2 7.3 63 6.6 60.6 6.1Z" />
+    </>
+  ),
+  // Laugavegur: a lone ice-capped mountain rising from a plain of black sand
+  "Hautes terres": (
+    <>
+      <path fillOpacity="0.15" d="M36.2 11.6C37.6 9 39.4 7.5 41.4 7 45.4 6 48 7 50.4 9.4L52.8 12 51 11.2 49.6 12.6 47.8 11 46 12.8 44.2 11.2 42.4 12.6 40.8 11 39 12.4 37.6 11.2Z" />
+      <path fillOpacity="0.5" d="M24 22.4C29 19.8 33.4 15.6 36.2 11.6L37.6 11.2 39 12.4 40.8 11 42.4 12.6 44.2 11.2 46 12.8 47.8 11 49.6 12.6 51 11.2 52.8 12C55.4 15 58.6 19.6 66 22.4Z" />
+      <path d="M0 24C4 23.4 8 22.3 14 22.2 20 22 22 21.6 28 21.8 34 22 38 21.5 44 21.7 50 21.9 56 21.4 62 21.7 68 21.9 74 22.8 80 24Z" />
+    </>
+  ),
+  // A smoking volcano
+  Islande: (
+    <>
+      <path d="M0 24C12 23.6 20 20.6 27 14.4L31.6 10H34.8L36.4 11.4 38 10H41.6L46.4 14.4C53 20.6 62 23.6 80 24Z" />
+      <circle cx="36.4" cy="7.6" r="1.8" />
+      <circle cx="38.6" cy="4.8" r="2.2" />
+      <circle cx="42.2" cy="2.6" r="2.3" />
+    </>
+  ),
+};
+
+/**
+ * A series' skyline: a pale base, and an ink copy revealed left to right
+ * as the hiker walks across it (driven by the --fill variable, 0–1).
+ */
+export function Landmark({ title, ref }: { title: string; ref?: Ref<HTMLSpanElement> }) {
+  const art = LANDMARKS[title];
+  if (!art) return null;
+  return (
+    <span ref={ref} className="wall__landmark" aria-hidden="true">
+      <svg className="wall__landmark-base" viewBox="0 0 80 24">
+        {art}
+      </svg>
+      <svg className="wall__landmark-ink" viewBox="0 0 80 24">
+        {art}
+      </svg>
+    </span>
   );
 }
