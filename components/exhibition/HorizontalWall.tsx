@@ -30,6 +30,9 @@ const HIKER_MAX_SWING = 40;
 /** Length of the landing bounce once the hiker is let go (ms). */
 const HIKER_LANDING = 520;
 
+/** Prints fetched at once while warming the rest of the wall in the background. */
+const WARM_PARALLEL = 2;
+
 /** Hanging height of each size, as a share of the viewport height. */
 const HEIGHT: Record<WorkSize, number> = { s: 0.4, m: 0.54, l: 0.68 };
 
@@ -207,6 +210,54 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
     setTimeout(() => hiker.classList.remove("is-landing"), HIKER_LANDING);
   };
 
+  // The wall slides by transform, so the browser's lazy loading only sees a
+  // print when it is almost on screen: a fast walk or a jump to a chapter
+  // then fetches and decodes a dozen large images mid-glide. Once the page
+  // has settled, load the rest of the wall ahead of the visitor, in hanging
+  // order and a couple at a time.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    let stopped = false;
+    const queue = [...track.querySelectorAll<HTMLImageElement>('img[loading="lazy"]')];
+
+    const worker = async () => {
+      for (let img = queue.shift(); img && !stopped; img = queue.shift()) {
+        img.loading = "eager";
+        // Decoding here keeps it off the frames of the walk.
+        await img.decode().catch(() => {});
+      }
+    };
+    const start = () => {
+      for (let i = 0; i < WARM_PARALLEL; i++) worker();
+    };
+
+    // Safari has no requestIdleCallback: a short delay does the same job.
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const onLoad = () => {
+      idle = setTimeout(() => ("requestIdleCallback" in window ? requestIdleCallback(start) : start()), 500);
+    };
+    if (document.readyState === "complete") onLoad();
+    else window.addEventListener("load", onLoad, { once: true });
+    return () => {
+      stopped = true;
+      clearTimeout(idle);
+      window.removeEventListener("load", onLoad);
+    };
+  }, []);
+
+  /** Fetch a chapter's prints right away, ahead of the glide towards it. */
+  const hurry = (title: string) => {
+    const start = wall.findIndex(item => item.kind === "text" && item.title === title);
+    const end = wall.findIndex((item, i) => i > start && item.kind === "text");
+    itemRefs.current.slice(start, end < 0 ? wall.length : end).forEach(el =>
+      el?.querySelectorAll("img").forEach(img => {
+        img.fetchPriority = "high";
+        img.loading = "eager";
+      })
+    );
+  };
+
   // ← / → step from one work to the next, centring it on the wall.
   useEffect(() => {
     if (paused) return;
@@ -302,6 +353,7 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
               onClick={() => {
                 const section = sectionRef.current;
                 if (!section || !lenis) return;
+                hurry(m.title);
                 const far = Math.abs(section.offsetTop + m.walk - window.scrollY);
                 lenis.scrollTo(section.offsetTop + m.walk, { duration: Math.min(3, 1.4 + far / 10000) });
               }}
