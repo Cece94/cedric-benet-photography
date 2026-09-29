@@ -43,6 +43,7 @@ import L1004227 from "@/photos/L1004227.jpg";
 import L1004258 from "@/photos/L1004258.jpg";
 import L1004895 from "@/photos/L1004895.jpg";
 import L1004966 from "@/photos/L1004966.jpg";
+import DSC00445 from "@/photos/DSC00445-2.jpg";
 
 export type Photo = {
   id: string;
@@ -107,7 +108,9 @@ export const wall: WallItem[] = [
     "Panorama of green volcanic highlands and a small lake, Iceland"), "m"),
   work(photo("dsc06873", DSC06873, "Hattafell", "2025",
     "Moss-covered Hattafell rising from the black sands of Mælifellssandur, Iceland"), "m"),
-  work(photo("dsc01533", DSC01533, "Poudreuse", "2024", "Wind-sculpted snowy ridge against a blue sky"), "m"),
+  work(photo("dsc01533", DSC01533, "Poudreuse", "2024", "Wind-sculpted snowy ridge against a blue sky"), "m", true),
+  work(photo("dsc00445", DSC00445, "Voile", "2024",
+    "Jagged snow-covered peak disappearing into thick fog"), "m"),
   work(photo("l1003502", L1003502, "Rendez-vous", "2022",
     "Orange lighthouse on a grassy headland facing mountains"), "m"),
   work(photo("dsc02453", DSC02453, "Demeure", "2024",
