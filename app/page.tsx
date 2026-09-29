@@ -5,7 +5,6 @@ import { useState } from "react";
 import { ExhibitionWall } from "@/components/ExhibitionWall";
 import { Hero } from "@/components/Hero";
 import { Lightbox } from "@/components/Lightbox";
-import { ScrollIndicator } from "@/components/ScrollIndicator";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { hero } from "@/lib/gallery";
@@ -16,7 +15,6 @@ export default function HomePage() {
   return (
     <SmoothScroll>
       <SiteHeader />
-      <ScrollIndicator />
 
       <Hero photo={hero} />
 

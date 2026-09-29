@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { motion, useMotionValue, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 
 import {
@@ -24,6 +24,12 @@ const HIKER_STOP = 120;
 /** Wall movement per frame (px) below which the hiker rests: ignores the smooth-scroll glide's long tail. */
 const HIKER_MIN_STEP = 1.5;
 
+/** Swing of the carried hiker per px/ms of drag speed (deg), and its limit. */
+const HIKER_SWING = 28;
+const HIKER_MAX_SWING = 40;
+/** Length of the landing bounce once the hiker is let go (ms). */
+const HIKER_LANDING = 520;
+
 /** Hanging height of each size, as a share of the viewport height. */
 const HEIGHT: Record<WorkSize, number> = { s: 0.4, m: 0.54, l: 0.68 };
 
@@ -42,6 +48,8 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
   // The hiker walking along the progress line, and when to let them rest.
   const hikerRef = useRef<HTMLSpanElement>(null);
   const hikerStep = useRef({ last: -1, timer: undefined as ReturnType<typeof setTimeout> | undefined });
+  // The hiker being carried by the pointer: last position, for the swing.
+  const hikerDrag = useRef<{ x: number; t: number; settle?: ReturnType<typeof setTimeout> } | null>(null);
   // Item positions along the track, measured on mount and resize.
   const layout = useRef({ lefts: [] as number[], widths: [] as number[], lightsOut: Infinity });
   // Series shortcuts along the progress line: position (0–1) and scroll distance.
@@ -151,6 +159,54 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [distance]);
 
+  // Pick the hiker up and carry them along the line: the wall follows.
+  const carryTo = (clientX: number) => {
+    const section = sectionRef.current;
+    const line = progressRef.current?.parentElement;
+    if (!section || !line) return;
+    const rect = line.getBoundingClientRect();
+    const top = section.offsetTop + clamp01((clientX - rect.left) / rect.width) * distance.get();
+    if (lenis) lenis.scrollTo(top, { immediate: true, force: true });
+    else window.scrollTo(0, top);
+  };
+
+  const onHikerDown = (e: PointerEvent<HTMLSpanElement>) => {
+    const hiker = e.currentTarget;
+    e.preventDefault();
+    hiker.setPointerCapture(e.pointerId);
+    hiker.classList.remove("is-landing");
+    hiker.classList.add("is-held");
+    hikerDrag.current = { x: e.clientX, t: e.timeStamp };
+    carryTo(e.clientX);
+  };
+
+  const onHikerMove = (e: PointerEvent<HTMLSpanElement>) => {
+    const drag = hikerDrag.current;
+    if (!drag) return;
+    const hiker = e.currentTarget;
+    // Dangling from the hand, the body trails behind the movement.
+    const speed = (e.clientX - drag.x) / Math.max(1, e.timeStamp - drag.t);
+    const swing = Math.max(-HIKER_MAX_SWING, Math.min(HIKER_MAX_SWING, -speed * HIKER_SWING));
+    hiker.style.setProperty("--swing", `${swing.toFixed(1)}deg`);
+    clearTimeout(drag.settle);
+    drag.settle = setTimeout(() => hiker.style.setProperty("--swing", "0deg"), 90);
+    drag.x = e.clientX;
+    drag.t = e.timeStamp;
+    carryTo(e.clientX);
+  };
+
+  const onHikerUp = (e: PointerEvent<HTMLSpanElement>) => {
+    const drag = hikerDrag.current;
+    if (!drag) return;
+    const hiker = e.currentTarget;
+    clearTimeout(drag.settle);
+    hikerDrag.current = null;
+    hiker.style.setProperty("--swing", "0deg");
+    hiker.classList.remove("is-held");
+    hiker.classList.add("is-landing");
+    setTimeout(() => hiker.classList.remove("is-landing"), HIKER_LANDING);
+  };
+
   // ← / → step from one work to the next, centring it on the wall.
   useEffect(() => {
     if (paused) return;
@@ -224,7 +280,14 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
             <HomeIcon />
           </button>
           <span ref={progressRef} className="wall__progress-fill" />
-          <span ref={hikerRef} className="wall__hiker">
+          <span
+            ref={hikerRef}
+            className="wall__hiker"
+            onPointerDown={onHikerDown}
+            onPointerMove={onHikerMove}
+            onPointerUp={onHikerUp}
+            onPointerCancel={onHikerUp}
+          >
             <Hiker />
             <span className="wall__hiker-bubble">Hi !</span>
           </span>
