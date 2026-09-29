@@ -14,9 +14,23 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant"
 });
 
+const description =
+  "Cédric Benet, photographe. Ambiances du Grand Nord : Nordic Noir (Islande, Norvège), Hautes terres (Laugavegur). Exposé à ImageNation Paris 2023.";
+
 export const metadata: Metadata = {
-  title: "Cédric Benet | Photographie",
-  description: "Photographie — Norvège, Islande."
+  metadataBase: new URL("https://cedric-benet-photography.vercel.app"),
+  title: "Cédric Benet | Photographe",
+  description,
+  keywords: ["Cédric Benet", "photographe", "photographie", "Nordic Noir", "Islande", "Norvège", "Lofoten", "exposition photo"],
+  openGraph: {
+    title: "Cédric Benet | Photographe",
+    description,
+    url: "/",
+    siteName: "Cédric Benet",
+    locale: "fr_FR",
+    type: "website"
+  },
+  twitter: { card: "summary_large_image", title: "Cédric Benet | Photographe", description }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -35,6 +35,12 @@ export function SiteHeader() {
           Cédric Benet
         </Link>
       </p>
+      <nav className="site-header__links" aria-label="Contact">
+        <a href="mailto:cedricbenetphoto@gmail.com">Contact</a>
+        <a href="https://www.instagram.com/cedricbenet.photo/" target="_blank" rel="noreferrer">
+          Instagram
+        </a>
+      </nav>
     </header>
   );
 }

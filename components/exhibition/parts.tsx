@@ -147,12 +147,19 @@ export function WallEnd({ itemRef }: { itemRef: Ref<HTMLDivElement> }) {
   return (
     <div ref={itemRef} className="wall-end" id="contact">
       <p className="wall-text__title">Merci</p>
-      <a className="wall-end__mail" href="mailto:hello@cedricbenet.com">
-        hello@cedricbenet.com
+      <a className="wall-end__mail" href="mailto:cedricbenetphoto@gmail.com">
+        cedricbenetphoto@gmail.com
       </a>
+      <p className="wall-end__cv">
+        <span className="wall-end__cv-label">Exposition</span>
+        2023 — ImageNation Paris, Paris Photo OFF, Galerie Joseph Le Palais
+      </p>
       <p className="wall-end__links">
-        <a href="https://www.instagram.com" target="_blank" rel="noreferrer">
+        <a href="https://www.instagram.com/cedricbenet.photo/" target="_blank" rel="noreferrer">
           Instagram
+        </a>
+        <a href="/Cedric_Benet_Dossier_artistique.pdf" target="_blank" rel="noreferrer">
+          Dossier artistique
         </a>
         <span>© {new Date().getFullYear()} Cédric Benet</span>
       </p>

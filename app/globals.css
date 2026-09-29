@@ -93,8 +93,30 @@ html.lenis.lenis-stopped {
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
-.site-header p {
+.site-header p,
+.site-header__links {
   pointer-events: auto;
+}
+
+.site-header__links {
+  display: flex;
+  gap: 1.6rem;
+  font-size: 0.66rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+}
+
+.site-header__links a {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.site-header__links a:hover,
+.site-header__links a:focus-visible {
+  opacity: 1;
 }
 
 .site-header__home {
@@ -496,6 +518,21 @@ html.lenis.lenis-stopped {
 
 .wall-end__mail:hover {
   border-color: var(--wall-ink);
+}
+
+.wall-end__cv {
+  margin: 0;
+  max-width: 34rem;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: var(--wall-muted);
+}
+
+.wall-end__cv-label {
+  display: block;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
 }
 
 .wall-end__links {
