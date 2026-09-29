@@ -267,11 +267,12 @@ function Star({ x, y, s }: { x: number; y: number; s: number }) {
  * from one to the next. Keyed by the chapter's wall-text title.
  */
 const LANDMARKS: Record<string, ReactNode> = {
-  // Lofoten at dawn: sheer walls plunging into a fjord, a rorbu, a sea eagle
+  // Lofoten at dawn: snow-streaked walls plunging into a fjord, a rorbu, a sea eagle
   Aube: (
     <>
       <Sun cx={4} cy={16.4} r={1.6} />
-      <path d="M0 24 4 23.2 7.5 19 10.5 9 12.6 11 16 2.6 18.6 7.8 20.4 6 23.4 13.5 25.6 20.5 27.4 24H31.6V21.4L33.8 19.6 36 21.4V24H40.6L42.4 19.5 44.6 8.4 46.6 10.4 49.6 3.8 51.6 7 53.8 5.2 57 12 61 18.4 67 22 74 23.4 80 24Z" />
+      <path fillOpacity="0.15" d="M14.6 6.06 15.4 4.08 15.3 9.6ZM21 7.5 21.8 9.5 21.2 13.2ZM48.4 6.44 49.2 4.68 49 10.2ZM54.4 6.48 55.2 8.18 54.6 12.4Z" />
+      <path fillRule="evenodd" d="M0 24 4 23.2 7.5 19 10.5 9 12.6 11 16 2.6 18.6 7.8 20.4 6 23.4 13.5 25.6 20.5 27.4 24H31.6V21.4L33.8 19.6 36 21.4V24H40.6L42.4 19.5 44.6 8.4 46.6 10.4 49.6 3.8 51.6 7 53.8 5.2 57 12 61 18.4 67 22 74 23.4 80 24ZM14.6 6.06 15.4 4.08 15.3 9.6ZM21 7.5 21.8 9.5 21.2 13.2ZM48.4 6.44 49.2 4.68 49 10.2ZM54.4 6.48 55.2 8.18 54.6 12.4Z" />
       <path d="M58 6.2 61 4.8 63.2 5 64.3 5.8 65 5.2 65.7 5.8 66.8 5 69 4.8 72 6.2 69.4 6.1 67 6.6 65.8 7.3 65.6 8.6 65 9.1 64.4 8.6 64.2 7.3 63 6.6 60.6 6.1Z" />
     </>
   ),
