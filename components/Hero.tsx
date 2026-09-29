@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 
+import { useLenis } from "@/components/SmoothScroll";
 import type { Photo } from "@/lib/gallery";
 
 /**
@@ -12,6 +13,15 @@ import type { Photo } from "@/lib/gallery";
  */
 export function Hero({ photo }: { photo: Photo }) {
   const ref = useRef<HTMLElement>(null);
+  const lenis = useLenis();
+
+  const scrollPast = () => {
+    const hero = ref.current;
+    if (!hero) return;
+    const top = hero.offsetTop + hero.offsetHeight;
+    if (lenis) lenis.scrollTo(top, { duration: 1.6 });
+    else window.scrollTo({ top, behavior: "smooth" });
+  };
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -45,16 +55,18 @@ export function Hero({ photo }: { photo: Photo }) {
         </motion.div>
       </motion.div>
 
-      <motion.div
+      <motion.button
+        type="button"
         className="hero__hint"
-        aria-hidden="true"
+        onClick={scrollPast}
+        aria-label="Scroll to explore"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.6 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
       >
-        <span className="hero__hint-label">Scroll</span>
+        <span className="hero__hint-label">Scroll to explore</span>
         <span className="hero__hint-line" />
-      </motion.div>
+      </motion.button>
     </section>
   );
 }
