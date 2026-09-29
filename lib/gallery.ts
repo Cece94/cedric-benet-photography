@@ -15,6 +15,8 @@ import DSC02252 from "@/photos/DSC02252.jpg";
 import DSC02412 from "@/photos/DSC02412.jpg";
 import DSC02418 from "@/photos/DSC02418.jpg";
 import DSC02453 from "@/photos/DSC02453.jpg";
+import DSC02757 from "@/photos/DSC02757.jpg";
+import DSC02758 from "@/photos/DSC02758.jpg";
 import DSC02784 from "@/photos/DSC02784.jpg";
 import DSC06783 from "@/photos/DSC06783.jpg";
 import DSC06822 from "@/photos/DSC06822.jpg";
@@ -156,6 +158,8 @@ export const wall: WallItem[] = [
   work(photo("l1004966", L1004966, "Nuit d'hiver", "2023",
     "Houses and a tree strung with lights on a winter night"), "m", true),
   work(photo("l1004895", L1004895, "Le chat", "2023", "Warmly lit window on a dark corrugated facade"), "s"),
+  work(photo("dsc02757", DSC02757, "Remous", "2024", "Swirling green aurora in a starry night sky"), "m", true),
+  work(photo("dsc02758", DSC02758, "Ruban", "2024", "Ribbon of green aurora arching across a starry sky"), "m"),
   work(photo("dsc02784", DSC02784, "Aurora", "2024", "Green aurora borealis over silhouetted trees"), "l")
 ];
 
