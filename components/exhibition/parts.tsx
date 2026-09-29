@@ -206,38 +206,116 @@ export function Hiker() {
 }
 
 /**
- * Skyline of each series, rising out of the progress line and falling back
- * into it (base on y = 24). Keyed by the series' wall-text title.
+ * A sun: a disc with short rays. A setting sun is half sunk below the
+ * horizon, so only its upper rays show.
+ */
+function Sun({ cx, cy, r, setting = false }: { cx: number; cy: number; r: number; setting?: boolean }) {
+  const angles = setting ? [205, 238, 270, 302, 335] : [0, 45, 90, 135, 180, 225, 270, 315];
+  return (
+    <g>
+      {setting ? (
+        <path d={`M${cx - r} ${cy}A${r} ${r} 0 0 1 ${cx + r} ${cy}Z`} />
+      ) : (
+        <circle cx={cx} cy={cy} r={r} />
+      )}
+      <g stroke="currentColor" strokeWidth={0.55} strokeLinecap="round">
+        {angles.map(a => {
+          const rad = (a * Math.PI) / 180;
+          const [cos, sin] = [Math.cos(rad), Math.sin(rad)];
+          return (
+            <line
+              key={a}
+              x1={(cx + cos * r * 1.45).toFixed(2)}
+              y1={(cy + sin * r * 1.45).toFixed(2)}
+              x2={(cx + cos * r * 2).toFixed(2)}
+              y2={(cy + sin * r * 2).toFixed(2)}
+            />
+          );
+        })}
+      </g>
+    </g>
+  );
+}
+
+/**
+ * The aurora as a curtain of dots: columns along a gentle wave, brightest
+ * at the bottom hem and fading upwards. [x, y, radius, opacity]
+ */
+const AURORA = Array.from({ length: 30 }, (_, i) => 6 + i * 2.35).flatMap(x => {
+  const hem = 8.6 + 2.4 * Math.sin(x / 8.5);
+  return [
+    [x, hem, 0.42, 0.85],
+    [x + 0.3, hem - 1.5, 0.36, 0.55],
+    [x + 0.6, hem - 3, 0.3, 0.3],
+    [x + 0.9, hem - 4.5, 0.25, 0.15]
+  ].map(([cx, cy, r, o]) => [+cx.toFixed(2), +cy.toFixed(2), r, o] as const);
+});
+
+/** A four-pointed twinkling star of half-size `s`. */
+function Star({ x, y, s }: { x: number; y: number; s: number }) {
+  const k = s * 0.28;
+  return (
+    <path
+      d={`M${x} ${y - s}L${x + k} ${y - k} ${x + s} ${y}L${x + k} ${y + k} ${x} ${y + s}L${x - k} ${y + k} ${x - s} ${y}L${x - k} ${y - k}Z`}
+    />
+  );
+}
+
+/**
+ * Skyline of each chapter of the day, rising out of the progress line and
+ * falling back into it (base on y = 24), the sun rising then setting
+ * from one to the next. Keyed by the chapter's wall-text title.
  */
 const LANDMARKS: Record<string, ReactNode> = {
-  // Lofoten: sheer walls plunging into a fjord, a rorbu at the water, a sea eagle
-  Norvège: (
+  // Lofoten at dawn: sheer walls plunging into a fjord, a rorbu, a sea eagle
+  Aube: (
     <>
+      <Sun cx={4} cy={16.4} r={1.6} />
       <path d="M0 24 4 23.2 7.5 19 10.5 9 12.6 11 16 2.6 18.6 7.8 20.4 6 23.4 13.5 25.6 20.5 27.4 24H31.6V21.4L33.8 19.6 36 21.4V24H40.6L42.4 19.5 44.6 8.4 46.6 10.4 49.6 3.8 51.6 7 53.8 5.2 57 12 61 18.4 67 22 74 23.4 80 24Z" />
       <path d="M58 6.2 61 4.8 63.2 5 64.3 5.8 65 5.2 65.7 5.8 66.8 5 69 4.8 72 6.2 69.4 6.1 67 6.6 65.8 7.3 65.6 8.6 65 9.1 64.4 8.6 64.2 7.3 63 6.6 60.6 6.1Z" />
     </>
   ),
-  // Laugavegur: a lone ice-capped mountain rising from a plain of black sand
-  "Hautes terres": (
+  // The highlands by day: an ice-capped mountain on black sand
+  Journée: (
     <>
+      <Sun cx={66} cy={5} r={2} />
       <path fillOpacity="0.15" d="M36.2 11.6C37.6 9 39.4 7.5 41.4 7 45.4 6 48 7 50.4 9.4L52.8 12 51 11.2 49.6 12.6 47.8 11 46 12.8 44.2 11.2 42.4 12.6 40.8 11 39 12.4 37.6 11.2Z" />
       <path fillOpacity="0.5" d="M24 22.4C29 19.8 33.4 15.6 36.2 11.6L37.6 11.2 39 12.4 40.8 11 42.4 12.6 44.2 11.2 46 12.8 47.8 11 49.6 12.6 51 11.2 52.8 12C55.4 15 58.6 19.6 66 22.4Z" />
       <path d="M0 24C4 23.4 8 22.3 14 22.2 20 22 22 21.6 28 21.8 34 22 38 21.5 44 21.7 50 21.9 56 21.4 62 21.7 68 21.9 74 22.8 80 24Z" />
     </>
   ),
-  // A smoking volcano
-  Islande: (
+  // Dusk: a smoking volcano, the sun about to touch the horizon
+  Crépuscule: (
     <>
+      <Sun cx={67} cy={23.4} r={2.6} setting />
       <path d="M0 24C12 23.6 20 20.6 27 14.4L31.6 10H34.8L36.4 11.4 38 10H41.6L46.4 14.4C53 20.6 62 23.6 80 24Z" />
       <circle cx="36.4" cy="7.6" r="1.8" />
       <circle cx="38.6" cy="4.8" r="2.2" />
       <circle cx="42.2" cy="2.6" r="2.3" />
     </>
   ),
+  // Night: a cabin with a lit window under the aurora, a crescent moon and stars
+  Nuit: (
+    <>
+      {AURORA.map(([x, y, r, opacity]) => (
+        <circle key={`${x} ${y}`} cx={x} cy={y} r={r} fillOpacity={opacity} />
+      ))}
+      <path
+        fillRule="evenodd"
+        d="M0 24C8 23.4 14 20 22 19.4 28 19 32 20.6 38 20.4L44 20.2V15.6L49 12 54 15.6V20C60 19.6 66 18.6 72 21 76 22.6 78 23.6 80 24ZM46.8 18.6H48.6V16.8H46.8Z"
+      />
+      <path d="M56 19.9 58 14 60 19.6Z" />
+      <path d="M4.21 1.12A2.3 2.3 0 1 0 4.21 5.28 2.59 2.59 0 0 1 4.21 1.12Z" />
+      <Star x={14} y={2.4} s={1.2} />
+      <Star x={39} y={14.8} s={0.9} />
+      <Star x={71} y={15.4} s={1.1} />
+      <Star x={25} y={15} s={0.8} />
+    </>
+  ),
 };
 
 /**
- * A series' skyline: a pale base, and an ink copy revealed left to right
+ * A chapter's skyline: a pale base, and an ink copy revealed left to right
  * as the hiker walks across it (driven by the --fill variable, 0–1).
  */
 export function Landmark({ title, ref }: { title: string; ref?: Ref<HTMLSpanElement> }) {

@@ -56,9 +56,11 @@ export type Photo = {
 export type WorkSize = "s" | "m" | "l";
 
 /**
- * The exhibition is one long wall, read left to right:
+ * The exhibition is one long wall, read left to right as a single day in
+ * the North: Norway and Iceland mixed, from the brightest photographs to
+ * the darkest (Aube → Journée → Crépuscule → Nuit).
  * - work: a hung photograph; `tight` hangs the next one close, as a pair
- * - text: a wall text introducing a series
+ * - text: a wall text introducing a chapter of the day
  */
 export type WallItem =
   | { kind: "work"; photo: Photo; size: WorkSize; tight?: boolean }
@@ -83,10 +85,10 @@ export const portrait = photo("dsc06822", DSC06822, "Cédric Benet — Laugavegu
   "Cédric Benet hiking with a red backpack above a canyon in the Icelandic highlands");
 
 /** Photo from which the gallery lights dim to night (see ExhibitionWall). */
-export const LIGHTS_OUT_ID = "l1003566";
+export const LIGHTS_OUT_ID = "l1004258";
 
 export const wall: WallItem[] = [
-  text("Norvège", "Lofoten — 2024"),
+  text("Aube", "Neige, aigles et maisons blanches"),
   work(photo("dsc01974", DSC01974Enhanced, "Premières lueurs", "2024",
     "Sunrise breaking under dark clouds over the Norwegian sea and snowy mountains"), "m"),
   work(photo("dsc02193", DSC02193, "Envol", "2024", "White-tailed eagle in flight"), "s", true),
@@ -96,60 +98,62 @@ export const wall: WallItem[] = [
     "Two white-tailed eagles flying over a fjord and snowy peaks"), "l"),
   work(photo("dsc02252", DSC02252, "La prise", "2024",
     "Eagle catching a fish in front of snowy peaks, black and white"), "m"),
-  work(photo("dsc01441", DSC01441, "Grand Nord", "2024",
-    "Streaked clouds over a fjord with small islands and snowy mountains"), "l", true),
-  work(photo("dsc01411", DSC01411, "Sommet", "2024", "Snow-covered peak under heavy clouds"), "s"),
+  work(photo("l1004099", L1004099, "Église", "2022",
+    "White wooden church behind a picket gate, black and white"), "l"),
   work(photo("dsc01420", DSC01420, "Traversée", "2024", "Snowy mountain slopes under a bright cloudy sky"), "m"),
-  work(photo("dsc01533", DSC01533, "Poudreuse", "2024", "Wind-sculpted snowy ridge against a blue sky"), "m"),
-  work(photo("dsc02412", DSC02412, "Séchoirs #1", "2024", "Cod drying racks, black and white"), "m", true),
-  work(photo("dsc02418", DSC02418, "Séchoirs #2", "2024", "Stockfish rack on a rocky shore, black and white"), "m", true),
-  work(photo("dsc02453", DSC02453, "Demeure", "2024",
-    "Red fishermen's cabins reflected upside down in still water"), "m"),
-  work(photo("dsc01682", DSC01682, "Brume d'ambre", "2024",
-    "Layered mountain silhouettes and a church in amber haze"), "l"),
-  work(hero, "l"),
-  work(photo("dsc02784", DSC02784, "Nuit verte", "2024", "Green aurora borealis over silhouetted trees"), "l"),
-
-  text("Hautes terres", "Islande, Laugavegur — 2025"),
+  work(photo("l1004068", L1004068, "Chez soi", "2022", "White house with a grass turf roof"), "m", true),
+  work(photo("l1004071", L1004071, "Voisins", "2022", "Stone path leading to turf houses"), "m"),
   work(photo("dsc07041", DSC07041, "Álftavatn", "2025",
     "Panorama of green volcanic highlands and a small lake, Iceland"), "m"),
   work(photo("dsc06873", DSC06873, "Hattafell", "2025",
-    "Moss-covered Hattafell rising from the black sands of Mælifellssandur, Iceland"), "m", true),
-  work(photo("dsc06915", DSC06915, "Désert", "2025", "Hattafell lit by sun under dark storm clouds"), "s"),
+    "Moss-covered Hattafell rising from the black sands of Mælifellssandur, Iceland"), "m"),
+  work(photo("dsc01533", DSC01533, "Poudreuse", "2024", "Wind-sculpted snowy ridge against a blue sky"), "m"),
+  work(photo("l1003502", L1003502, "Rendez-vous", "2022",
+    "Orange lighthouse on a grassy headland facing mountains"), "m"),
+  work(photo("dsc02453", DSC02453, "Demeure", "2024",
+    "Red fishermen's cabins reflected upside down in still water"), "m"),
+
+  text("Journée", "Rhyolites, cascades et orages qui montent"),
+  work(photo("dsc07207", DSC07207, "Rhyolites", "2025", "Multicoloured rhyolite mountains under a blue sky"), "s"),
+  work(photo("dsc01441", DSC01441, "Grand Nord", "2024",
+    "Streaked clouds over a fjord with small islands and snowy mountains"), "l", true),
+  work(photo("dsc01411", DSC01411, "Sommet", "2024", "Snow-covered peak under heavy clouds"), "s"),
+  work(photo("l1003012", L1003012, "Nuage", "2022", "Waterfall seen from behind the curtain of water"), "l"),
   work(photo("dsc07009", DSC07009, "Eau vive", "2025",
     "River winding through a green valley toward a pointed peak"), "l", true),
   work(photo("dsc07132", DSC07132, "Névé", "2025", "Snowfield below a snow-capped summit in a barren valley"), "l"),
   work(photo("dsc07185", DSC07185, "Point de vue", "2025",
     "Hiker in a red jacket overlooking rhyolite mountains, Landmannalaugar"), "l"),
-  work(photo("dsc07207", DSC07207, "Rhyolites", "2025", "Multicoloured rhyolite mountains under a blue sky"), "s"),
   work(photo("dsc07313-panorama", DSC07313Panorama, "Landmannalaugar", "2025",
     "Panorama of ochre and green rhyolite mountains under a grey sky, Landmannalaugar"), "l"),
-  work(photo("dsc07112", DSC07112, "Perdu", "2025", "Volcanic highlands under a stormy sky, Iceland"), "m"),
-  work(photo("dsc07168", DSC07168, "Fumerolles", "2025", "Steaming geothermal vents in dark hills"), "m"),
-  work(photo("dsc06783", DSC06783, "Racines", "2025",
-    "Tangled roots on black ground below a stormy sky, black and white"), "l"),
+  work(photo("dsc06915", DSC06915, "Désert", "2025", "Hattafell lit by sun under dark storm clouds"), "s"),
+  work(photo("dsc02412", DSC02412, "Séchoirs #1", "2024", "Cod drying racks, black and white"), "m", true),
+  work(photo("dsc02418", DSC02418, "Séchoirs #2", "2024", "Stockfish rack on a rocky shore, black and white"), "m"),
   work(photo("dsc07113", DSC07113, "Le sentier", "2025",
     "Trail through brown hills with patches of snow and a lone hiker"), "s"),
+  work(photo("dsc07168", DSC07168, "Fumerolles", "2025", "Steaming geothermal vents in dark hills"), "m"),
+  work(photo("dsc07112", DSC07112, "Perdu", "2025", "Volcanic highlands under a stormy sky, Iceland"), "m"),
 
-  text("Islande", "Côtes, villages et volcans — 2022 · 2023"),
-  work(photo("l1003502", L1003502, "Rendez-vous", "2022",
-    "Orange lighthouse on a grassy headland facing mountains"), "m"),
-  work(photo("l1003012", L1003012, "Nuage", "2022", "Waterfall seen from behind the curtain of water"), "l"),
-  work(photo("l1004068", L1004068, "Chez soi", "2022", "White house with a grass turf roof"), "m", true),
-  work(photo("l1004071", L1004071, "Voisins", "2022", "Stone path leading to turf houses"), "m"),
-  work(photo("l1004099", L1004099, "Église", "2022",
-    "White wooden church behind a picket gate, black and white"), "l"),
+  text("Crépuscule", "Volcans, feux et brumes"),
   work(photo("l1004258", L1004258, "Éruption", "2022",
     "Volcanic eruption with lava fountains and smoke over a lava field"), "l"),
   work(photo("l1004227", L1004227, "Braise", "2022", "Glowing vent on the horizon beyond a dark lava field"), "s"),
+  work(hero, "l"),
+  work(photo("dsc06783", DSC06783, "Racines", "2025",
+    "Tangled roots on black ground below a stormy sky, black and white"), "l"),
+  work(photo("dsc01682", DSC01682, "Brume d'ambre", "2024",
+    "Layered mountain silhouettes and a church in amber haze"), "l"),
+
+  text("Nuit", "Heure bleue, fenêtres allumées et aurores"),
   work(photo("l1003566", L1003566, "Minuit violet", "2022", "Mountain silhouettes against a purple twilight sky"), "m"),
-  work(photo("l1003588", L1003588, "Cabane", "2022", "Lit cabin between trees at night"), "m", true),
-  work(photo("l1003684", L1003684, "Insomnie", "2022", "Lit windows of a house under a tree at night"), "m"),
   work(photo("l1003637", L1003637, "Heure bleue", "2022", "Houses reflected in still water at blue hour"), "m"),
   work(photo("l1003639", L1003639, "Seyðisfjörður", "2022", "Village lights along a fjord at night"), "l"),
+  work(photo("l1003588", L1003588, "Cabane", "2022", "Lit cabin between trees at night"), "m", true),
+  work(photo("l1003684", L1003684, "Insomnie", "2022", "Lit windows of a house under a tree at night"), "m"),
   work(photo("l1004966", L1004966, "Nuit d'hiver", "2023",
     "Houses and a tree strung with lights on a winter night"), "m", true),
-  work(photo("l1004895", L1004895, "Le chat", "2023", "Warmly lit window on a dark corrugated facade"), "s")
+  work(photo("l1004895", L1004895, "Le chat", "2023", "Warmly lit window on a dark corrugated facade"), "s"),
+  work(photo("dsc02784", DSC02784, "Aurora", "2024", "Green aurora borealis over silhouetted trees"), "l")
 ];
 
 /** Every hung photo in wall order: drives the lightbox and the cartel numbers. */

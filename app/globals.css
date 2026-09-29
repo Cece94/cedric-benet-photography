@@ -574,7 +574,9 @@ html.lenis.lenis-stopped {
 
 /* Ink poured in from the left as the hiker walks across (--fill: 0–1) */
 .wall__landmark-ink {
-  fill: var(--wall-ink);
+  /* colour, not just fill, so the sun's stroked rays are inked too */
+  color: var(--wall-ink);
+  fill: currentColor;
   clip-path: inset(0 calc((1 - var(--fill, 0)) * 100%) 0 0);
 }
 
