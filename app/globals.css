@@ -1308,10 +1308,13 @@ html.lenis.lenis-stopped {
   padding-left: var(--g);
 }
 
+/* Right after the last print, closer than between two works */
+.vwall__hang:has(+ .wall-end) {
+  margin-bottom: 5svh;
+}
+
 .vwall .wall-end {
   width: auto;
-  min-height: 80svh;
-  justify-content: center;
   padding: 0 var(--g);
 }
 

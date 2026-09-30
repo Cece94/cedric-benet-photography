@@ -144,7 +144,7 @@ export function WorkFigure({ item, n, onOpen, sizes, className = "", itemRef, in
 export function WallEnd({ itemRef }: { itemRef: Ref<HTMLDivElement> }) {
   return (
     <div ref={itemRef} className="wall-end" id="contact">
-      <p className="wall-text__title">Merci</p>
+      <p className="wall-text__title">Contact me</p>
       <EndCredits />
     </div>
   );
