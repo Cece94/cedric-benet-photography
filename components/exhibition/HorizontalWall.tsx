@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { motion, useMotionValue, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 
 import {
   Hiker,
   HomeIcon,
   Landmark,
-  WallEnd,
   WallIntro,
   WallText,
   WorkFigure,
@@ -16,6 +15,7 @@ import {
   setLights,
   workNumbers
 } from "./parts";
+import { Finale, WALL_GONE, useFlight } from "./Finale";
 import { useLenis } from "@/components/SmoothScroll";
 import { LIGHTS_OUT_ID, aspect, wall, type WorkSize } from "@/lib/gallery";
 
@@ -32,6 +32,9 @@ const HIKER_LANDING = 520;
 
 /** Prints fetched at once while warming the rest of the wall in the background. */
 const WARM_PARALLEL = 2;
+
+/** Scroll spent flying into the hiker's bubble once the walk is over, in viewport heights. */
+const FLIGHT_LENGTH = 1.6;
 
 /** Hanging height of each size, as a share of the viewport height. */
 const HEIGHT: Record<WorkSize, number> = { s: 0.4, m: 0.54, l: 0.68 };
@@ -60,11 +63,42 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
   const markerRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const landmarkRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const lenis = useLenis();
-
-  // How far the track overflows the viewport, i.e. how far the walk goes.
+  // How far the track overflows the viewport, i.e. how far the walk goes,
+  // then how much scroll the flight into the hiker's bubble takes.
   const distance = useMotionValue(0);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
-  const x = useTransform([scrollYProgress, distance], ([p, d]: number[]) => -p * d);
+  const flightLength = useMotionValue(0);
+  // Scroll into the pinned section, from its own measured top: framer's
+  // scrollYProgress keeps a stale section height after a resize.
+  const sectionTop = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const scrolled = useTransform(
+    [scrollY, sectionTop, distance, flightLength],
+    ([y, top, d, f]: number[]) => Math.min(d + f, Math.max(0, y - top))
+  );
+  const x = useTransform([scrolled, distance], ([s, d]: number[]) => -Math.min(s, d));
+  // 0 on the wall, 1 inside the bubble.
+  const flight = useTransform([scrolled, distance, flightLength], ([s, d, f]: number[]) =>
+    f ? clamp01((s - d) / f) : 0
+  );
+  const camera = useFlight(flight);
+  const bubbleRef = useRef<HTMLSpanElement>(null);
+  // The walk is over: the hiker turns to invite a message.
+  const [ended, setEnded] = useState(false);
+
+  useMotionValueEvent(flight, "change", p => {
+    setEnded(p > 0);
+    // The series titles go dark with the prints, leaving the hiker on the line.
+    progressRef.current?.parentElement?.style.setProperty("--bar", clamp01(1 - p / WALL_GONE).toFixed(3));
+  });
+
+  // Once the bubble says « Contact me », aim the camera at it. The site
+  // header steps aside: the page inside the bubble carries its links.
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle("is-finale", ended);
+    if (ended && bubbleRef.current) camera.aim(bubbleRef.current);
+    // aim is recreated each render but only reads the DOM
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ended]);
 
   // Per-frame effects written straight to the DOM (no re-renders).
   const apply = (xv: number) => {
@@ -135,9 +169,13 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
       layout.current = { lefts, widths, lightsOut: outIndex >= 0 ? lefts[outIndex] : Infinity };
 
       const overflow = Math.max(0, track.scrollWidth - window.innerWidth);
+      const fly = Math.round(window.innerHeight * FLIGHT_LENGTH);
       distance.set(overflow);
-      // Extra scroll height equal to the overflow gives a 1:1 walking speed.
-      section.style.height = `calc(100svh + ${overflow}px)`;
+      flightLength.set(fly);
+      sectionTop.set(section.offsetTop);
+      // Extra scroll height equal to the overflow gives a 1:1 walking speed,
+      // then the flight into the bubble.
+      section.style.height = `calc(100svh + ${overflow + fly}px)`;
 
       // One marker per series, where its wall text sits just inside the left edge.
       setMarkers(
@@ -160,7 +198,7 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
     };
     // apply/x are stable for the component's lifetime
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [distance]);
+  }, [distance, flightLength, sectionTop]);
 
   // Pick the hiker up and carry them along the line: the wall follows.
   const carryTo = (clientX: number) => {
@@ -289,7 +327,7 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
   return (
     <section ref={sectionRef} className="wall" aria-label="Exposition">
       <div className="wall__sticky">
-        <motion.div ref={trackRef} className="wall__track" style={{ x }}>
+        <motion.div ref={trackRef} className="wall__track" style={{ x, opacity: camera.prints }}>
           <WallIntro />
 
           {wall.map((item, i) => {
@@ -314,61 +352,65 @@ export function HorizontalWall({ onOpen, paused }: { onOpen: (index: number) => 
             );
           })}
 
-          <WallEnd
-            itemRef={el => {
-              itemRefs.current[wall.length] = el;
-            }}
-          />
+          {/* Room after the last print for the hiker to stop and invite a message */}
+          <div className="wall-coda" aria-hidden="true" />
         </motion.div>
 
-        <nav className="wall__progress" aria-label="Séries">
-          <button
-            type="button"
-            className="wall__home"
-            aria-label="Retour à l'accueil"
-            onClick={() => (lenis ? lenis.scrollTo(0, { duration: 2.4 }) : window.scrollTo({ top: 0, behavior: "smooth" }))}
-          >
-            <HomeIcon />
-          </button>
-          <span ref={progressRef} className="wall__progress-fill" />
-          <span
-            ref={hikerRef}
-            className="wall__hiker"
-            onPointerDown={onHikerDown}
-            onPointerMove={onHikerMove}
-            onPointerUp={onHikerUp}
-            onPointerCancel={onHikerUp}
-          >
-            <Hiker />
-            <span className="wall__hiker-bubble">Hi !</span>
-          </span>
-          {markers.map((m, i) => (
+        {/* The camera's lens: flies into the hiker's bubble for the finale */}
+        <motion.div className="wall__lens" style={camera.lens}>
+          <nav className="wall__progress" aria-label="Séries">
             <button
-              key={m.title}
-              ref={el => {
-                markerRefs.current[i] = el;
-              }}
-              className="wall__marker"
-              style={{ left: `${m.at * 100}%` }}
-              onClick={() => {
-                const section = sectionRef.current;
-                if (!section || !lenis) return;
-                hurry(m.title);
-                const far = Math.abs(section.offsetTop + m.walk - window.scrollY);
-                lenis.scrollTo(section.offsetTop + m.walk, { duration: Math.min(3, 1.4 + far / 10000) });
-              }}
+              type="button"
+              className="wall__home"
+              aria-label="Retour à l'accueil"
+              onClick={() => (lenis ? lenis.scrollTo(0, { duration: 2.4 }) : window.scrollTo({ top: 0, behavior: "smooth" }))}
             >
-              {m.title}
-              <Landmark
-                title={m.title}
-                ref={el => {
-                  landmarkRefs.current[i] = el;
-                }}
-              />
+              <HomeIcon />
             </button>
-          ))}
-        </nav>
+            <span ref={progressRef} className="wall__progress-fill" />
+            <span
+              ref={hikerRef}
+              className={`wall__hiker${ended ? " is-thanking" : ""}`}
+              onPointerDown={onHikerDown}
+              onPointerMove={onHikerMove}
+              onPointerUp={onHikerUp}
+              onPointerCancel={onHikerUp}
+            >
+              <Hiker />
+              <span ref={bubbleRef} className="wall__hiker-bubble">
+                <span className="wall__hiker-words">{ended ? "Contact me" : "Hi !"}</span>
+              </span>
+            </span>
+            {markers.map((m, i) => (
+              <button
+                key={m.title}
+                ref={el => {
+                  markerRefs.current[i] = el;
+                }}
+                className="wall__marker"
+                style={{ left: `${m.at * 100}%` }}
+                onClick={() => {
+                  const section = sectionRef.current;
+                  if (!section || !lenis) return;
+                  hurry(m.title);
+                  const far = Math.abs(section.offsetTop + m.walk - window.scrollY);
+                  lenis.scrollTo(section.offsetTop + m.walk, { duration: Math.min(3, 1.4 + far / 10000) });
+                }}
+              >
+                {m.title}
+                <Landmark
+                  title={m.title}
+                  ref={el => {
+                    landmarkRefs.current[i] = el;
+                  }}
+                />
+              </button>
+            ))}
+          </nav>
+        </motion.div>
       </div>
+
+      <Finale camera={camera} open={ended} />
     </section>
   );
 }

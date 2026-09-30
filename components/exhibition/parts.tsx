@@ -145,6 +145,15 @@ export function WallEnd({ itemRef }: { itemRef: Ref<HTMLDivElement> }) {
   return (
     <div ref={itemRef} className="wall-end" id="contact">
       <p className="wall-text__title">Merci</p>
+      <EndCredits />
+    </div>
+  );
+}
+
+/** Contact, exhibition record and links closing the show. */
+export function EndCredits() {
+  return (
+    <>
       <a className="wall-end__mail" href="mailto:cedricbenetphoto@gmail.com">
         cedricbenetphoto@gmail.com
       </a>
@@ -161,7 +170,7 @@ export function WallEnd({ itemRef }: { itemRef: Ref<HTMLDivElement> }) {
         </a>
         <span>© {new Date().getFullYear()} Cédric Benet</span>
       </p>
-    </div>
+    </>
   );
 }
 

@@ -77,7 +77,7 @@ html.lenis.lenis-stopped {
   padding: 1.4rem 2rem;
   color: var(--wall-ink);
   pointer-events: none;
-  transition: color 0.4s ease;
+  transition: color 0.4s ease, opacity 0.6s ease;
 }
 
 /* Off the hero, a fade in the wall colour keeps the name clear of
@@ -232,6 +232,18 @@ html.lenis.lenis-stopped {
   height: 100svh;
   overflow: hidden;
   color: var(--wall-ink);
+}
+
+/* The camera's lens over the wall: flies into the hiker's bubble for the
+   finale. Only the progress line lives in it; clicks pass through to the wall. */
+.wall__lens {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wall__lens > * {
+  pointer-events: auto;
 }
 
 /* Everything hangs on one centre line, set a little above the middle to
@@ -490,6 +502,61 @@ html.lenis.lenis-stopped {
 
 /* ── End of the show ────────────────────────────────────── */
 
+/* Flying into the hiker's bubble: the site header steps aside */
+.is-finale .site-header {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0s 0.6s;
+}
+
+/* Room after the last print, where the hiker stops to invite a message */
+.wall-coda {
+  flex: none;
+  width: 24vw;
+}
+
+/* The farewell page inside the hiker's bubble (see Finale): shrunk into
+   it on the wall, full screen once the camera has flown in. The bubble
+   itself is the paper: night-dark, like the end of the walk. */
+.finale {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.4rem;
+  padding: 0 clamp(1.5rem, 8vw, 9rem);
+  text-align: center;
+  color: var(--wall-ink);
+}
+
+.finale__title {
+  margin: 0;
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(3.5rem, min(20vh, 11vw), 12rem);
+  font-weight: 300;
+  line-height: 0.9;
+  white-space: nowrap;
+  letter-spacing: -0.03em;
+}
+
+.finale__credits {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6rem;
+}
+
+.finale .wall-end__mail {
+  align-self: center;
+}
+
+.finale .wall-end__links {
+  justify-content: center;
+}
+
 .wall-end {
   flex: none;
   display: flex;
@@ -556,6 +623,13 @@ html.lenis.lenis-stopped {
   bottom: 2.2rem;
   height: 1px;
   background: color-mix(in srgb, var(--wall-ink) 14%, transparent);
+}
+
+/* --bar: 1 → 0 as the series titles go dark for the finale, leaving the
+   hiker on the line */
+.wall__home,
+.wall__marker {
+  opacity: var(--bar, 1);
 }
 
 /* Series shortcuts: small titles standing on the progress line */
@@ -892,7 +966,8 @@ html.lenis.lenis-stopped {
   opacity: 0;
 }
 
-.wall__hiker:hover .hiker__wave {
+.wall__hiker:hover .hiker__wave,
+.wall__hiker.is-thanking .hiker__wave {
   opacity: 1;
 }
 
@@ -907,7 +982,8 @@ html.lenis.lenis-stopped {
   transform-origin: 17.4px 8.6px;
 }
 
-.wall__hiker:hover .hiker__forearm {
+.wall__hiker:hover .hiker__forearm,
+.wall__hiker.is-thanking .hiker__forearm {
   animation: hiker-wave 0.3s ease-in-out infinite alternate;
 }
 
@@ -935,6 +1011,38 @@ html.lenis.lenis-stopped {
   pointer-events: none;
 }
 
+/* At the end, the page's own title stands in for the bubble's words (see
+   Finale); they only keep the bubble its size */
+.wall__hiker.is-thanking .wall__hiker-words {
+  visibility: hidden;
+}
+
+/* Inviting a message at the end of the night: a dark bubble with pale words
+   and a hairline edge, the page the camera then flies into */
+.wall__hiker.is-thanking .wall__hiker-bubble {
+  background: var(--wall);
+  color: var(--wall-ink);
+  box-shadow: 0 0 0 1px var(--wall-ink);
+}
+
+/* The tail keeps the edge: a pale triangle just behind the dark one */
+.wall__hiker.is-thanking .wall__hiker-bubble::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 30%;
+  border: 5px solid transparent;
+  border-top-color: var(--wall-ink);
+  border-bottom: 0;
+  transform: translateX(-50%);
+}
+
+.wall__hiker.is-thanking .wall__hiker-bubble::after {
+  border-top-color: var(--wall);
+  /* over the edge line where the tail joins the bubble */
+  margin-top: -1px;
+}
+
 /* Tail pointing down at the hiker's head */
 .wall__hiker-bubble::after {
   content: "";
@@ -947,7 +1055,8 @@ html.lenis.lenis-stopped {
   transform: translateX(-50%);
 }
 
-.wall__hiker:not(.is-held):hover .wall__hiker-bubble {
+.wall__hiker:not(.is-held):hover .wall__hiker-bubble,
+.wall__hiker.is-thanking .wall__hiker-bubble {
   opacity: 1;
   transform: translate(-30%, 0) scale(1);
 }
